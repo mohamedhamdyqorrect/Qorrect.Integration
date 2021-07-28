@@ -27,6 +27,8 @@ namespace Qorrect.Integration.Controllers
         [HttpGet, Route("ImportCourseStandardFromAPI/{id}")] // id = "D5FCB9F0-3131-4688-BBBE-6A719B54D25B"
         public async Task<IActionResult> ImportCourseStandardFromAPI([FromRoute] string id)
         {
+            string token = Request.Headers["Authorization"];
+
             #region Get Course From API
 
             List<DTOCourses> courseResult = new List<DTOCourses>();
@@ -56,7 +58,7 @@ namespace Qorrect.Integration.Controllers
                 var client = new RestClient("http://localhost:5001/courses");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", "Bearer A79D5EA34EA54AEAD0A9B2542C49508A380FE32AF9B2442E5CDFF2D11DF863F8");
+                request.AddHeader("Authorization", $"{token}");
                 request.AddHeader("Content-Type", "application/json");
 
                 foreach (var item in courseResult)
@@ -100,13 +102,15 @@ namespace Qorrect.Integration.Controllers
         public async Task<IActionResult> ImportCourseStandardFromBedo([FromRoute] string id)
         {
 
+            string token = Request.Headers["Authorization"];
+
             var bedoCourses = await courseDataAccessLayer.GetAllCourses();
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
 
             var client = new RestClient("http://localhost:5001/courses");
             client.Timeout = -1;
             var request = new RestRequest(Method.POST);
-            request.AddHeader("Authorization", "Bearer A79D5EA34EA54AEAD0A9B2542C49508A380FE32AF9B2442E5CDFF2D11DF863F8");
+            request.AddHeader("Authorization", $"{token}");
             request.AddHeader("Content-Type", "application/json");
 
             foreach (var item in bedoCourses)
