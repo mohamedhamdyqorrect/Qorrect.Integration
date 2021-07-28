@@ -55,11 +55,7 @@ namespace Qorrect.Integration.Controllers
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
 
             {
-                var client = new RestClient("http://localhost:5001/courses");
-                client.Timeout = -1;
-                var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", $"{token}");
-                request.AddHeader("Content-Type", "application/json");
+             
 
                 foreach (var item in courseResult)
                 {
@@ -80,6 +76,12 @@ namespace Qorrect.Integration.Controllers
                         }
 
                     };
+
+                    var client = new RestClient("http://localhost:5001/courses");
+                    client.Timeout = -1;
+                    var request = new RestRequest(Method.POST);
+                    request.AddHeader("Authorization", $"{token}");
+                    request.AddHeader("Content-Type", "application/json");
 
                     request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
                     IRestResponse response = client.Execute(request);
@@ -107,11 +109,7 @@ namespace Qorrect.Integration.Controllers
             var bedoCourses = await courseDataAccessLayer.GetAllCourses();
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
 
-            var client = new RestClient("http://localhost:5001/courses");
-            client.Timeout = -1;
-            var request = new RestRequest(Method.POST);
-            request.AddHeader("Authorization", $"{token}");
-            request.AddHeader("Content-Type", "application/json");
+      
 
             foreach (var item in bedoCourses)
             {
@@ -130,6 +128,12 @@ namespace Qorrect.Integration.Controllers
                         TotalHours = item.ClassesHours
                     }
                 };
+
+                var client = new RestClient("http://localhost:5001/courses");
+                client.Timeout = -1;
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("Authorization", $"{token}");
+                request.AddHeader("Content-Type", "application/json");
 
                 request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
