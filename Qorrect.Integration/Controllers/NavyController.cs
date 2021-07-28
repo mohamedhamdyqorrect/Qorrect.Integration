@@ -24,7 +24,7 @@ namespace Qorrect.Integration.Controllers
         }
 
 
-        [HttpGet, Route("ImportCourseStandardFromAPI/{id}")]
+        [HttpGet, Route("ImportCourseStandardFromAPI/{id}")] // id = "D5FCB9F0-3131-4688-BBBE-6A719B54D25B"
         public async Task<IActionResult> ImportCourseStandardFromAPI([FromRoute] string id)
         {
             #region Get Course From API
@@ -96,7 +96,7 @@ namespace Qorrect.Integration.Controllers
 
 
         [HttpGet]
-        [Route("ImportCourseStandardFromBedo/{id}")]
+        [Route("ImportCourseStandardFromBedo/{id}")] // id = "D5FCB9F0-3131-4688-BBBE-6A719B54D25B"
         public async Task<IActionResult> ImportCourseStandardFromBedo([FromRoute] string id)
         {
 
