@@ -99,12 +99,12 @@ namespace Qorrect.Integration.Controllers
         }
 
 
-        [HttpGet]
-        [Route("ImportCourseStandardFromBedo/{id}")] // id = "D5FCB9F0-3131-4688-BBBE-6A719B54D25B"
-        public async Task<IActionResult> ImportCourseStandardFromBedo([FromRoute] string id)
+        [HttpPost]
+        [Route("ImportCourseStandardFromBedo")] // id = "D5FCB9F0-3131-4688-BBBE-6A719B54D25B"
+        public async Task<IActionResult> ImportCourseStandardFromBedo([FromBody] DTOAddCourseRequest courseRequ)
         {
 
-            string token = Request.Headers["Authorization"];
+            string token = courseRequ.BearerToken;
 
             var bedoCourses = await courseDataAccessLayer.GetAllCourses();
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
@@ -117,7 +117,7 @@ namespace Qorrect.Integration.Controllers
                 {
                     Name = item.CourseName,
                     Code = item.CourseCode,
-                    CourseSubscriptionId = new Guid(id),
+                    CourseSubscriptionId = new Guid(courseRequ.CourseSubscriptionId),
                     CourseData = new DTOCourseData
                     {
                         CourseType = CourseType.Elective,

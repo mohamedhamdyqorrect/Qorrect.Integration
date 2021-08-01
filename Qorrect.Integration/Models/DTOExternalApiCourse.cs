@@ -4,6 +4,13 @@ using System.Collections.Generic;
 
 namespace Qorrect.Integration.Models
 {
+
+    public class DTOAddCourseRequest
+    {
+        public string BearerToken { get; set; }
+        public string CourseSubscriptionId { get; set; }
+    }
+
     public class DTOExternalApiCourse
     {
         public List<DTOCourses> courses { get; set; }
@@ -22,7 +29,7 @@ namespace Qorrect.Integration.Models
     public class DTOAddEditCourse
     {
         public Guid? Id { get; set; }
-       public string Code { get; set; }
+        public string Code { get; set; }
         public string Name { get; set; }
         public Guid? CourseSubscriptionId { get; set; }
         public DTOCourseData CourseData { get; set; }
