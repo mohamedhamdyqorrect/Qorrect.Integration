@@ -67,4 +67,17 @@ namespace Qorrect.Integration.Models
         public int LevelID { get; set; }
         public string Description { get; set; }
     }
+
+    public class CourseLeaf
+    {
+        public Guid? Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public double? TeachingHours { get; set; }
+        public double? Marks { get; set; }
+        public int Weight { get; set; }
+        public Guid ParentId { get; set; }
+        public List<Guid> IntendedLearningOutcomes { get; set; }
+        public int Order { get; set; }
+    }
 }
