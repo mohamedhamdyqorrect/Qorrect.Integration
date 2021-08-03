@@ -11,6 +11,12 @@ namespace Qorrect.Integration.Models
         public string CourseSubscriptionId { get; set; }
     }
 
+    public class DTOAddCourseLevelRequest
+    {
+        public string BearerToken { get; set; }
+        public int CourseId { get; set; }
+    }
+
     public class DTOExternalApiCourse
     {
         public List<DTOCourses> courses { get; set; }
@@ -70,14 +76,19 @@ namespace Qorrect.Integration.Models
 
     public class CourseLeaf
     {
+        public CourseLeaf()
+        {
+            IntendedLearningOutcomes = new List<Guid>();
+        }
+
         public Guid? Id { get; set; }
         public string Name { get; set; }
         public string Code { get; set; }
         public double? TeachingHours { get; set; }
         public double? Marks { get; set; }
-        public int Weight { get; set; }
-        public Guid ParentId { get; set; }
+        public int? Weight { get; set; }
+        public Guid? ParentId { get; set; }
         public List<Guid> IntendedLearningOutcomes { get; set; }
-        public int Order { get; set; }
+        public int? Order { get; set; }
     }
 }

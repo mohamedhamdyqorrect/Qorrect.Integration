@@ -42,7 +42,7 @@ namespace Qorrect.Integration.Controllers
                     CourseData = new DTOCourseData
                     {
                         CourseType = CourseType.Elective,
-                        CreditHours = item.CreditHours,
+                        CreditHours = item.CreditHours == null ? 0 : item.CreditHours,
                         Description = item.Description,
                         LecturesHours = item.LectureHours,
                         PracticalHours = item.PracticalHours,
@@ -53,7 +53,7 @@ namespace Qorrect.Integration.Controllers
                 var client = new RestClient("http://localhost:5001/courses");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", $"{token}");
+                request.AddHeader("Authorization", token);
                 request.AddHeader("Content-Type", "application/json");
 
                 request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
@@ -66,66 +66,35 @@ namespace Qorrect.Integration.Controllers
 
         [HttpPost]
         [Route("ImportCourseStandardFromBedoLeaf")]
-        public async Task<IActionResult> ImportCourseStandardFromBedoLeaf([FromBody] DTOAddCourseRequest courseRequest)
+        public async Task<IActionResult> ImportCourseStandardFromBedoLeaf([FromBody] DTOAddCourseLevelRequest courseRequest)
         {
 
             string token = $"Bearer {courseRequest.BearerToken}";
 
-            var bedoCourses = await courseDataAccessLayer.GetAllCourses();
-            List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
+            var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
+            List<CourseLeaf> addedCourseLevels = new List<CourseLeaf>();
 
 
-            foreach (var item in bedoCourses)
+            foreach (var item in bedoCourseLevels)
             {
-                DTOAddEditCourse model = new DTOAddEditCourse()
-                {
-                    Name = item.CourseName,
-                    Code = item.CourseCode,
-                    CourseSubscriptionId = new Guid(courseRequest.CourseSubscriptionId),
-                    CourseData = new DTOCourseData
-                    {
-                        CourseType = CourseType.Elective,
-                        CreditHours = item.CreditHours,
-                        Description = item.Description,
-                        LecturesHours = item.LectureHours,
-                        PracticalHours = item.PracticalHours,
-                        TotalHours = item.ClassesHours
-                    }
-                };
-
                 var client = new RestClient("http://localhost:5001/courses/leaf");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", courseRequest.BearerToken);
+                request.AddHeader("Authorization", token);
                 request.AddHeader("Content-Type", "application/json");
 
-                var body = new CourseLeaf
-                {
-                    Id = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
-                    Name = "string",
-                    Code = "string",
-                    TeachingHours = 0,
-                    Marks = 0,
-                    Weight = 0,
-                    ParentId = new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6"),
-                    IntendedLearningOutcomes = new List<Guid>
-                    {
-                        new Guid("3fa85f64-5717-4562-b3fc-2c963f66afa6")
-                    }
-                    ,
-                    Order = 0
-                };
 
-                request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+
+                request.AddParameter("application/json", JsonConvert.SerializeObject(item), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
                 Console.WriteLine(response.Content);
 
 
 
-                var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
-                addedCoursed.Add(result);
+                //var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
+                //addedCoursed.Add(result);
             }
-            return Ok(addedCoursed);
+            return Ok();
         }
 
     }

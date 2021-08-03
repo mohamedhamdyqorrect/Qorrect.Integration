@@ -42,5 +42,33 @@ namespace Qorrect.Integration.Services
             }
             return lstCourse.ToList();
         }
+
+        public async Task<List<CourseLeaf>> GetCourseLevels(int crsId)
+        {
+            List<CourseLeaf> crsLevels = new List<CourseLeaf>();
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                SqlCommand cmd = new SqlCommand("spGetLevelByCourseId", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                cmd.Parameters.AddWithValue("@crsId", crsId);
+                con.Open();
+                SqlDataReader rdr = cmd.ExecuteReader();
+                while (rdr.Read())
+                {
+                    crsLevels.Add(new CourseLeaf
+                    {
+                        Id = Guid.NewGuid(),
+                        ParentId = Guid.Parse(rdr[1].ToString()),
+                        Name = rdr[2].ToString(),
+                        Code = rdr[3].ToString(),
+                        TeachingHours = Convert.ToDouble(rdr[4].ToString()),
+                        Marks = Convert.ToDouble(rdr[5].ToString()),
+                        Order = Convert.ToInt32(rdr[7].ToString())
+                    });
+                }
+                con.Close();
+            }
+            return crsLevels.ToList();
+        }
     }
 }
