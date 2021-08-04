@@ -71,9 +71,9 @@ namespace Qorrect.Integration.Controllers
 
             string token = $"Bearer {courseRequest.BearerToken}";
 
-            var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
+            var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId , courseRequest.LevelId);
             List<CourseLeaf> addedCourseLevels = new List<CourseLeaf>();
-
+            string resContent = string.Empty;
 
             foreach (var item in bedoCourseLevels)
             {
@@ -87,14 +87,11 @@ namespace Qorrect.Integration.Controllers
 
                 request.AddParameter("application/json", JsonConvert.SerializeObject(item), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
-                Console.WriteLine(response.Content);
-
-
-
+                resContent = response.Content;
                 //var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
                 //addedCoursed.Add(result);
             }
-            return Ok();
+            return Ok(resContent);
         }
 
     }

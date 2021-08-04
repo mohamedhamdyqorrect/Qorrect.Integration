@@ -43,7 +43,7 @@ namespace Qorrect.Integration.Services
             return lstCourse.ToList();
         }
 
-        public async Task<List<CourseLeaf>> GetCourseLevels(int crsId)
+        public async Task<List<CourseLeaf>> GetCourseLevels(int crsId, string LevelId)
         {
             List<CourseLeaf> crsLevels = new List<CourseLeaf>();
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -57,8 +57,7 @@ namespace Qorrect.Integration.Services
                 {
                     crsLevels.Add(new CourseLeaf
                     {
-                        Id = Guid.NewGuid(),
-                        ParentId = Guid.Parse(rdr[1].ToString()),
+                        ParentId = new Guid(LevelId),
                         Name = rdr[2].ToString(),
                         Code = rdr[3].ToString(),
                         TeachingHours = Convert.ToDouble(rdr[4].ToString()),

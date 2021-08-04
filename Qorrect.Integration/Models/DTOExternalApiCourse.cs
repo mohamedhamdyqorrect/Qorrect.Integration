@@ -15,6 +15,7 @@ namespace Qorrect.Integration.Models
     {
         public string BearerToken { get; set; }
         public int CourseId { get; set; }
+        public string LevelId { get; set; }
     }
 
     public class DTOExternalApiCourse
