@@ -15,7 +15,7 @@ namespace Qorrect.Integration.Models
     {
         public string BearerToken { get; set; }
         public int CourseId { get; set; }
-        public string LevelId { get; set; }
+        public Guid ParentId { get; set; }
     }
 
     public class DTOExternalApiCourse
@@ -71,8 +71,29 @@ namespace Qorrect.Integration.Models
         public int PracticalHours { get; set; }
         public int ClassesHours { get; set; }
         public int LectureHours { get; set; }
-        public int LevelID { get; set; }
         public string Description { get; set; }
+        public double? TotalMarks { get; set; }
+    }
+
+    public class DTOAddEditNodeLevel
+    {
+        public DTOAddEditNodeLevel()
+        {
+            TeachingHours = Marks = ILOCount = ChildrenCount = LeafsCount = 0;
+        }
+        public Guid? Id { get; set; }
+        public Guid ParentId { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public string ChildOutlineNodeName { get; set; }
+        public NodeType? ChildOutlineNodeType { get; set; }
+        public int? ChildrenCount { get; set; }
+        public int? LeafsCount { get; set; }
+        public double? Marks { get; set; }
+        public int? ILOCount { get; set; }
+        public double? TeachingHours { get; set; }
+        public int? Order { get; set; }
+        public string LeafOutlineNodeName { get; set; }
     }
 
     public class CourseLeaf
@@ -91,5 +112,34 @@ namespace Qorrect.Integration.Models
         public Guid? ParentId { get; set; }
         public List<Guid> IntendedLearningOutcomes { get; set; }
         public int? Order { get; set; }
+        public List<CourseLeaf> leaves { get; set; }
     }
+
+
+    public class DTOBedoUnites
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public int? Order { get; set; }
+        public double? Marks { get; set; }
+
+        public List<DTOBedoLessons> Lessons { get; set; }
+    }
+
+    public class DTOBedoLessons
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public int? Order { get; set; }
+        public int? ParentId { get; set; }
+
+    }
+
+    public class DTOApplyOutlineStructure
+    {
+        public Guid Id { get; set; }
+    }
+
 }

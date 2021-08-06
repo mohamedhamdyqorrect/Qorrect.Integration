@@ -34,8 +34,8 @@ namespace Qorrect.Integration.Services
                         ClassesHours = Convert.ToInt32(rdr["ClassesHours"]),
                         CreditHours = Convert.ToInt32(rdr["CreditHours"]),
                         LectureHours = Convert.ToInt32(rdr["LectureHours"]),
-                        LevelID = Convert.ToInt32(rdr["LevelID"]),
                         PracticalHours = Convert.ToInt32(rdr["PracticalHours"]),
+                        TotalMarks = Convert.ToDouble(rdr["TotalMarks"])
                     });
                 }
                 con.Close();
@@ -43,29 +43,49 @@ namespace Qorrect.Integration.Services
             return lstCourse.ToList();
         }
 
-        public async Task<List<CourseLeaf>> GetCourseLevels(int crsId, string LevelId)
+        public async Task<List<DTOBedoUnites>> GetCourseLevels(int crsId)
         {
-            List<CourseLeaf> crsLevels = new List<CourseLeaf>();
+            List<DTOBedoUnites> crsLevels = new List<DTOBedoUnites>();
+            int order = 0;
             using (SqlConnection con = new SqlConnection(connectionString))
             {
-                SqlCommand cmd = new SqlCommand("spGetLevelByCourseId", con);
-                cmd.CommandType = CommandType.StoredProcedure;
-                cmd.Parameters.AddWithValue("@crsId", crsId);
-                con.Open();
-                SqlDataReader rdr = cmd.ExecuteReader();
-                while (rdr.Read())
+                using (SqlCommand cmd = new SqlCommand("spGetLevelByCourseId", con))
                 {
-                    crsLevels.Add(new CourseLeaf
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@crsId", crsId);
+
+                    using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                     {
-                        ParentId = new Guid(LevelId),
-                        Name = rdr[2].ToString(),
-                        Code = rdr[3].ToString(),
-                        TeachingHours = Convert.ToDouble(rdr[4].ToString()),
-                        Marks = Convert.ToDouble(rdr[5].ToString()),
-                        Order = Convert.ToInt32(rdr[7].ToString())
-                    });
+
+                        using (DataSet ds = new DataSet())
+                        {
+
+                            da.Fill(ds);
+                            con.Close();
+
+                            if (ds.Tables[1].Rows.Count > 1)
+                            {
+                                order++;
+                                crsLevels = ds.Tables[0].AsEnumerable().Select(QdataRow => new DTOBedoUnites
+                                {
+                                    Id = QdataRow.Field<int>("ID"),
+                                    Name = QdataRow.Field<string>("Name"),
+                                    Code = QdataRow.Field<string>("Code"),
+                                    Order = order,
+                                    Lessons = ds.Tables[1].AsEnumerable().Select(AdataRow => new DTOBedoLessons
+                                    {
+                                        Name = AdataRow.Field<string>("Name"),
+                                        Code = AdataRow.Field<string>("Code"),
+                                        Order = order,
+                                        ParentId = AdataRow.Field<int>("ID_Ref")
+                                    }).Where(a => a.ParentId == QdataRow.Field<int>("ID")).ToList()
+                                }).ToList();
+
+                            }
+                        }
+
+                    }
                 }
-                con.Close();
             }
             return crsLevels.ToList();
         }
