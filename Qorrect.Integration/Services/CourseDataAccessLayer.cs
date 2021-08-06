@@ -74,6 +74,7 @@ namespace Qorrect.Integration.Services
                                     Order = order,
                                     Lessons = ds.Tables[1].AsEnumerable().Select(AdataRow => new DTOBedoLessons
                                     {
+                                        Id = AdataRow.Field<int>("ID"),
                                         Name = AdataRow.Field<string>("Name"),
                                         Code = AdataRow.Field<string>("Code"),
                                         Order = order,
@@ -88,6 +89,33 @@ namespace Qorrect.Integration.Services
                 }
             }
             return crsLevels.ToList();
+        }
+
+        public async Task<List<DTOBedoILO>> GetLevelIlo(int levelId)
+        {
+            List<DTOBedoILO> Ilos = new List<DTOBedoILO>();
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("spGetILOByLevelId", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@levelId", levelId);
+
+                    con.Open();
+                    SqlDataReader rdr = cmd.ExecuteReader();
+
+                    while (rdr.Read())
+                    {
+                        Ilos.Add(new DTOBedoILO()
+                        {
+                            Name = rdr["Name"].ToString(),
+                            Code = rdr["Code"].ToString()
+                        });
+                    }
+                    con.Close();
+                }
+            }
+            return Ilos.ToList();
         }
     }
 }

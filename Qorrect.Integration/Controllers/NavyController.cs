@@ -5,6 +5,7 @@ using Qorrect.Integration.Models;
 using Qorrect.Integration.Services;
 using RestSharp;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -99,10 +100,26 @@ namespace Qorrect.Integration.Controllers
         public async Task<IActionResult> ImportCourseStandardFromBedoLeaf([FromBody] DTOAddCourseLevelRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
-
-            var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
             List<CourseLeaf> addedCourseLevels = new List<CourseLeaf>();
             DTOAddEditNodeLevel unitResponse = new DTOAddEditNodeLevel();
+            DTOCognitiveLevelResponse cognitiveLevelResponse = new DTOCognitiveLevelResponse();
+            List<DTOBedoILO> bedoIlos = new List<DTOBedoILO>();
+
+
+            var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
+
+            #region Get Cognitive Level
+            {
+                var client = new RestClient($"http://localhost:5001/cognitivelevels?page=1&pageSize=10&courseId={courseRequest.ParentId}");
+                client.Timeout = -1;
+                var request = new RestRequest(Method.GET);
+                request.AddHeader("accept", "*/*");
+                request.AddHeader("Authorization", token);
+                IRestResponse response = client.Execute(request);
+                cognitiveLevelResponse = JsonConvert.DeserializeObject<List<DTOCognitiveLevelResponse>>(response.Content).FirstOrDefault();
+            }
+
+            #endregion
 
             foreach (var item in bedoCourseLevels)
             {
@@ -142,21 +159,56 @@ namespace Qorrect.Integration.Controllers
 
                     foreach (var node in item.Lessons)
                     {
-                        var body = new DTOAddEditNodeLevel
-                        {
-                            Code = node.Code,
-                            Name = node.Name,
-                            Order = node.Order,
-                            ParentId = unitResponse.Id.Value
-                        };
 
-                        var client = new RestClient("http://localhost:5001/courses/leaf");
-                        client.Timeout = -1;
-                        var request = new RestRequest(Method.POST);
-                        request.AddHeader("Authorization", token);
-                        request.AddHeader("Content-Type", "application/json");
-                        request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
-                        IRestResponse response = client.Execute(request);
+                        #region Get Ilos from Bedo
+
+                        {
+                            bedoIlos = await courseDataAccessLayer.GetLevelIlo(node.Id);
+                            foreach (var bedoIlo in bedoIlos)
+                            {
+
+                                var client = new RestClient("http://localhost:5001/intendedlearningoutcome");
+                                client.Timeout = -1;
+                                var request = new RestRequest(Method.POST);
+                                request.AddHeader("Authorization", token);
+                                request.AddHeader("Content-Type", "application/json");
+                                var body = new DTOQorrectILORequest
+                                {
+                                    Name = bedoIlo.Name,
+                                    Code = bedoIlo.Code,
+                                    CourseCognitiveLevelId = cognitiveLevelResponse.Id,
+                                    CourseCognitiveLevelName = cognitiveLevelResponse.Name,
+                                    CourseId = courseRequest.ParentId
+                                };
+                                request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                                IRestResponse response = client.Execute(request);
+                            }
+
+                        }
+
+                        #endregion
+
+                        #region Add Lesson
+
+                        {
+                            var body = new DTOAddEditNodeLevel
+                            {
+                                Code = node.Code,
+                                Name = node.Name,
+                                Order = node.Order,
+                                ParentId = unitResponse.Id.Value
+                            };
+
+                            var client = new RestClient("http://localhost:5001/courses/leaf");
+                            client.Timeout = -1;
+                            var request = new RestRequest(Method.POST);
+                            request.AddHeader("Authorization", token);
+                            request.AddHeader("Content-Type", "application/json");
+                            request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                            IRestResponse response = client.Execute(request);
+                        }
+
+                        #endregion
 
                     }
 
