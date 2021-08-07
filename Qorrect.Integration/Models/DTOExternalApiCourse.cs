@@ -142,6 +142,13 @@ namespace Qorrect.Integration.Models
         public Guid Id { get; set; }
     }
 
+    public class DTOAddCourseCognitiveLevelRequest
+    {
+        public Guid? Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+        public Guid CourseId { get; set; }
+    }
 
     public class DTOCognitiveLevelResponse
     {
@@ -156,7 +163,17 @@ namespace Qorrect.Integration.Models
     {
         public string Name { get; set; }
         public string Code { get; set; }
+        public string CognitiveName { get; set; }
     }
+
+
+    public class DTOBedoCongnitiveLevel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
+    }
+
 
     public class DTOQorrectILORequest
     {

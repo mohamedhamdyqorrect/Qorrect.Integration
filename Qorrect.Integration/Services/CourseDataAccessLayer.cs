@@ -109,13 +109,42 @@ namespace Qorrect.Integration.Services
                         Ilos.Add(new DTOBedoILO()
                         {
                             Name = rdr["Name"].ToString(),
-                            Code = rdr["Code"].ToString()
+                            Code = rdr["Code"].ToString(),
+                            CognitiveName = rdr["CognitiveName"].ToString()
                         });
                     }
                     con.Close();
                 }
             }
             return Ilos.ToList();
+        }
+
+        public async Task<List<DTOBedoCongnitiveLevel>> GetCongitive(int crsId)
+        {
+            List<DTOBedoCongnitiveLevel> congnitiveLevels = new List<DTOBedoCongnitiveLevel>();
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("GetCongitiveByCrsId", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@crsid", crsId);
+
+                    con.Open();
+                    SqlDataReader rdr = cmd.ExecuteReader();
+
+                    while (rdr.Read())
+                    {
+                        congnitiveLevels.Add(new DTOBedoCongnitiveLevel()
+                        {
+                            Id = Convert.ToInt32(rdr["Id"].ToString()),
+                            Name = rdr["Name"].ToString(),
+                            Code = rdr["Code"].ToString()
+                        });
+                    }
+                    con.Close();
+                }
+            }
+            return congnitiveLevels.ToList();
         }
     }
 }

@@ -32,6 +32,7 @@ namespace Qorrect.Integration.Controllers
 
             var bedoCourses = await courseDataAccessLayer.GetAllCourses();
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
+            List<DTOCognitiveLevelResponse> cognitiveLevelResponses = new List<DTOCognitiveLevelResponse>();
 
             foreach (var item in bedoCourses)
             {
@@ -68,11 +69,46 @@ namespace Qorrect.Integration.Controllers
                 addedCoursed.Add(result);
             }
 
-
-
-            #region Apply Outline structure to course
+            foreach (var item in addedCoursed)
             {
-                foreach (var item in addedCoursed)
+
+                #region Get Course Cognitive Levels
+
+                {
+                    var client = new RestClient($"http://localhost:5001/cognitivelevels?page=1&pageSize=10&courseId={item.Id}");
+                    client.Timeout = -1;
+                    var request = new RestRequest(Method.GET);
+                    request.AddHeader("accept", "*/*");
+                    request.AddHeader("Authorization", token);
+                    IRestResponse response = client.Execute(request);
+                    cognitiveLevelResponses = JsonConvert.DeserializeObject<List<DTOCognitiveLevelResponse>>(response.Content).ToList();
+
+
+                    #region Delete Course Cognitive Levels
+
+                    {
+                        foreach (var cognitiveLevelResponse in cognitiveLevelResponses)
+                        {
+
+                            var clientCL = new RestClient($"http://localhost:5001/cognitivelevel/{cognitiveLevelResponse.Id}");
+                            clientCL.Timeout = -1;
+                            var requestCL = new RestRequest(Method.DELETE);
+                            requestCL.AddHeader("accept", "*/*");
+                            requestCL.AddHeader("Authorization", token);
+                            IRestResponse responseCL = clientCL.Execute(requestCL);
+                        }
+
+                    }
+
+                    #endregion
+
+                }
+
+                #endregion
+
+
+                #region Apply Outline structure to course
+
                 {
                     var client = new RestClient("http://localhost:5001/course/applyOutline");
                     client.Timeout = -1;
@@ -88,9 +124,9 @@ namespace Qorrect.Integration.Controllers
                     request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                     IRestResponse response = client.Execute(request);
                 }
-            }
-            #endregion
+                #endregion
 
+            }
 
             return Ok(addedCoursed);
         }
@@ -102,13 +138,38 @@ namespace Qorrect.Integration.Controllers
             string token = $"Bearer {courseRequest.BearerToken}";
             List<CourseLeaf> addedCourseLevels = new List<CourseLeaf>();
             DTOAddEditNodeLevel unitResponse = new DTOAddEditNodeLevel();
-            DTOCognitiveLevelResponse cognitiveLevelResponse = new DTOCognitiveLevelResponse();
+            List<DTOBedoCongnitiveLevel> congnitiveLevels = new List<DTOBedoCongnitiveLevel>();
+            List<DTOCognitiveLevelResponse> cognitiveLevelResponse = new List<DTOCognitiveLevelResponse>();
             List<DTOBedoILO> bedoIlos = new List<DTOBedoILO>();
 
 
             var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
+            congnitiveLevels = await courseDataAccessLayer.GetCongitive(courseRequest.CourseId);
 
-            #region Get Cognitive Level
+            #region Add Bedo Cognitive Level in Qorrect
+
+            foreach (var item in congnitiveLevels)
+            {
+                var client = new RestClient("http://localhost:5001/cognitivelevel");
+                client.Timeout = -1;
+                var request = new RestRequest(Method.POST);
+                request.AddHeader("Authorization", token);
+                request.AddHeader("Content-Type", "application/json");
+                var body = new DTOAddCourseCognitiveLevelRequest
+                {
+                    Name = item.Name,
+                    Code = item.Code,
+                    CourseId = courseRequest.ParentId
+                };
+                request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                IRestResponse response = client.Execute(request);
+                Console.WriteLine(response.Content);
+            }
+
+            #endregion
+
+            #region Get Course Cognitive Levels
+
             {
                 var client = new RestClient($"http://localhost:5001/cognitivelevels?page=1&pageSize=10&courseId={courseRequest.ParentId}");
                 client.Timeout = -1;
@@ -116,10 +177,11 @@ namespace Qorrect.Integration.Controllers
                 request.AddHeader("accept", "*/*");
                 request.AddHeader("Authorization", token);
                 IRestResponse response = client.Execute(request);
-                cognitiveLevelResponse = JsonConvert.DeserializeObject<List<DTOCognitiveLevelResponse>>(response.Content).FirstOrDefault();
+                cognitiveLevelResponse = JsonConvert.DeserializeObject<List<DTOCognitiveLevelResponse>>(response.Content).ToList();
             }
 
             #endregion
+
 
             foreach (var item in bedoCourseLevels)
             {
@@ -176,8 +238,8 @@ namespace Qorrect.Integration.Controllers
                                 {
                                     Name = bedoIlo.Name,
                                     Code = bedoIlo.Code,
-                                    CourseCognitiveLevelId = cognitiveLevelResponse.Id,
-                                    CourseCognitiveLevelName = cognitiveLevelResponse.Name,
+                                    CourseCognitiveLevelId = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Id,
+                                    CourseCognitiveLevelName = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Name,
                                     CourseId = courseRequest.ParentId
                                 };
                                 request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
