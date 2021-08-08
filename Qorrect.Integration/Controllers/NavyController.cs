@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using Qorrect.Integration.Helper;
 using Qorrect.Integration.Models;
 using Qorrect.Integration.Services;
 using RestSharp;
@@ -8,6 +7,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Qorrect.Integration.Helper;
 
 namespace Qorrect.Integration.Controllers
 {
@@ -17,17 +18,25 @@ namespace Qorrect.Integration.Controllers
     public class NavyController : ControllerBase
     {
         CourseDataAccessLayer courseDataAccessLayer = null;
+        private readonly IConfiguration _configuration;
+        public string QorrectBaseUrl { get; set; }
 
-        public NavyController()
+        public NavyController(IConfiguration configuration)
         {
-            courseDataAccessLayer = new CourseDataAccessLayer();
+            _configuration = configuration;
+            courseDataAccessLayer = new CourseDataAccessLayer()
+            {
+                connectionString = _configuration.GetConnectionString("Constr")
+            };
+            QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
         }
+
+
 
         [HttpPost]
         [Route("ImportCourseStandardFromBedo")]
         public async Task<IActionResult> ImportCourseStandardFromBedo([FromBody] DTOAddCourseRequest courseRequest)
         {
-
             string token = $"Bearer {courseRequest.BearerToken}";
 
             var bedoCourses = await courseDataAccessLayer.GetAllCourses();
@@ -53,7 +62,7 @@ namespace Qorrect.Integration.Controllers
                     }
                 };
 
-                var client = new RestClient("http://localhost:5001/courses");
+                var client = new RestClient($"{QorrectBaseUrl}/courses");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", token);
@@ -64,7 +73,7 @@ namespace Qorrect.Integration.Controllers
                 var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
                 if (result == null)
                 {
-                    return Ok(response.Content);
+                    return BadRequest(response.StatusCode);
                 }
                 addedCoursed.Add(result);
             }
@@ -75,7 +84,7 @@ namespace Qorrect.Integration.Controllers
                 #region Get Course Cognitive Levels
 
                 {
-                    var client = new RestClient($"http://localhost:5001/cognitivelevels?page=1&pageSize=10&courseId={item.Id}");
+                    var client = new RestClient($"{QorrectBaseUrl}/cognitivelevels?page=1&pageSize=10&courseId={item.Id}");
                     client.Timeout = -1;
                     var request = new RestRequest(Method.GET);
                     request.AddHeader("accept", "*/*");
@@ -90,7 +99,7 @@ namespace Qorrect.Integration.Controllers
                         foreach (var cognitiveLevelResponse in cognitiveLevelResponses)
                         {
 
-                            var clientCL = new RestClient($"http://localhost:5001/cognitivelevel/{cognitiveLevelResponse.Id}");
+                            var clientCL = new RestClient($"{QorrectBaseUrl}/cognitivelevel/{cognitiveLevelResponse.Id}");
                             clientCL.Timeout = -1;
                             var requestCL = new RestRequest(Method.DELETE);
                             requestCL.AddHeader("accept", "*/*");
@@ -110,7 +119,7 @@ namespace Qorrect.Integration.Controllers
                 #region Apply Outline structure to course
 
                 {
-                    var client = new RestClient("http://localhost:5001/course/applyOutline");
+                    var client = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
                     client.Timeout = -1;
                     var request = new RestRequest(Method.POST);
                     request.AddHeader("Authorization", token);
@@ -150,7 +159,7 @@ namespace Qorrect.Integration.Controllers
 
             foreach (var item in congnitiveLevels)
             {
-                var client = new RestClient("http://localhost:5001/cognitivelevel");
+                var client = new RestClient($"{QorrectBaseUrl}/cognitivelevel");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.POST);
                 request.AddHeader("Authorization", token);
@@ -163,7 +172,6 @@ namespace Qorrect.Integration.Controllers
                 };
                 request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
-                Console.WriteLine(response.Content);
             }
 
             #endregion
@@ -171,7 +179,7 @@ namespace Qorrect.Integration.Controllers
             #region Get Course Cognitive Levels
 
             {
-                var client = new RestClient($"http://localhost:5001/cognitivelevels?page=1&pageSize=10&courseId={courseRequest.ParentId}");
+                var client = new RestClient($"{QorrectBaseUrl}/cognitivelevels?page=1&pageSize=10&courseId={courseRequest.ParentId}");
                 client.Timeout = -1;
                 var request = new RestRequest(Method.GET);
                 request.AddHeader("accept", "*/*");
@@ -189,7 +197,7 @@ namespace Qorrect.Integration.Controllers
                 #region Add Node level authorized by teacher
 
                 {
-                    var client = new RestClient("http://localhost:5001/courses/node");
+                    var client = new RestClient($"{QorrectBaseUrl}/courses/node");
                     client.Timeout = -1;
                     var request = new RestRequest(Method.POST);
                     request.AddHeader("Authorization", token);
@@ -207,7 +215,7 @@ namespace Qorrect.Integration.Controllers
                     unitResponse = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(response.Content);
                     if (unitResponse == null)
                     {
-                        return Ok(response.Content);
+                        return BadRequest(response.StatusCode);
                     }
                 }
 
@@ -228,22 +236,29 @@ namespace Qorrect.Integration.Controllers
                             bedoIlos = await courseDataAccessLayer.GetLevelIlo(node.Id);
                             foreach (var bedoIlo in bedoIlos)
                             {
+                                #region Add Ilos For Cognitive Levels
 
-                                var client = new RestClient("http://localhost:5001/intendedlearningoutcome");
-                                client.Timeout = -1;
-                                var request = new RestRequest(Method.POST);
-                                request.AddHeader("Authorization", token);
-                                request.AddHeader("Content-Type", "application/json");
-                                var body = new DTOQorrectILORequest
                                 {
-                                    Name = bedoIlo.Name,
-                                    Code = bedoIlo.Code,
-                                    CourseCognitiveLevelId = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Id,
-                                    CourseCognitiveLevelName = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Name,
-                                    CourseId = courseRequest.ParentId
-                                };
-                                request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
-                                IRestResponse response = client.Execute(request);
+                                    var client = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
+                                    client.Timeout = -1;
+                                    var request = new RestRequest(Method.POST);
+                                    request.AddHeader("Authorization", token);
+                                    request.AddHeader("Content-Type", "application/json");
+                                    var body = new DTOQorrectILORequest
+                                    {
+                                        Name = bedoIlo.Name,
+                                        Code = bedoIlo.Code,
+                                        CourseCognitiveLevelId = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Id,
+                                        CourseCognitiveLevelName = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Name,
+                                        CourseId = courseRequest.ParentId
+                                    };
+                                    request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                                    IRestResponse response = client.Execute(request);
+                                }
+
+                                #endregion
+
+
                             }
 
                         }
@@ -261,7 +276,7 @@ namespace Qorrect.Integration.Controllers
                                 ParentId = unitResponse.Id.Value
                             };
 
-                            var client = new RestClient("http://localhost:5001/courses/leaf");
+                            var client = new RestClient($"{QorrectBaseUrl}/courses/leaf");
                             client.Timeout = -1;
                             var request = new RestRequest(Method.POST);
                             request.AddHeader("Authorization", token);

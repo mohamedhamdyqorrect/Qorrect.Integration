@@ -1,5 +1,4 @@
-﻿using Qorrect.Integration.Helper;
-using Qorrect.Integration.Models;
+﻿using Qorrect.Integration.Models;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -11,7 +10,7 @@ namespace Qorrect.Integration.Services
 {
     public class CourseDataAccessLayer
     {
-        string connectionString = ConnectionString.CName;
+        public string connectionString { get; set; }
 
         public async Task<List<DTOBedoCourse>> GetAllCourses()
         {
