@@ -80,7 +80,7 @@ namespace Qorrect.Integration.Controllers
             {
 
                 #region Get Course Cognitive Levels
-               
+
 
                 {
                     if (item.Id != null)
@@ -174,7 +174,10 @@ namespace Qorrect.Integration.Controllers
                 };
                 request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
-                Console.WriteLine(response.Content);
+                if (response.Content is null)
+                {
+                    return Ok(response.Content);
+                }
             }
 
             #endregion
@@ -189,6 +192,10 @@ namespace Qorrect.Integration.Controllers
                 request.AddHeader("Authorization", token);
                 IRestResponse response = client.Execute(request);
                 cognitiveLevelResponse = JsonConvert.DeserializeObject<List<DTOCognitiveLevelResponse>>(response.Content).ToList();
+                if (cognitiveLevelResponse == null)
+                {
+                    return Ok(response.Content);
+                }
             }
 
             #endregion
@@ -216,15 +223,13 @@ namespace Qorrect.Integration.Controllers
                     request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                     IRestResponse response = client.Execute(request);
                     unitResponse = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(response.Content);
-                    if (unitResponse == null)
+                    if (unitResponse is null)
                     {
                         return Ok(response.Content);
                     }
                 }
 
                 #endregion
-
-
 
                 #region Add Leaf Level to course outline
 
@@ -257,6 +262,10 @@ namespace Qorrect.Integration.Controllers
                                 requestILO.AddParameter("application/json", JsonConvert.SerializeObject(bodyILO), ParameterType.RequestBody);
                                 IRestResponse responseILO = clientILO.Execute(requestILO);
                                 var resultILO = JsonConvert.DeserializeObject<DTOQorrectILORequest>(responseILO.Content);
+                                if (resultILO is null)
+                                {
+                                    return Ok(responseILO.Content);
+                                }
                                 ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                             }
 
@@ -275,7 +284,7 @@ namespace Qorrect.Integration.Controllers
                                 ParentId = unitResponse.Id.Value,
                                 IntendedLearningOutcomes = ListOfIlOsInserted
                             };
-                            
+
                             var client = new RestClient($"{QorrectBaseUrl}/courses/leaf");
                             client.Timeout = -1;
                             var request = new RestRequest(Method.POST);
@@ -285,7 +294,10 @@ namespace Qorrect.Integration.Controllers
                             IRestResponse response = client.Execute(request);
 
                             var resultleaf = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(response.Content);
-                          
+                            if (resultleaf is null)
+                            {
+                                return Ok(response.Content);
+                            }
                         }
 
                         #endregion

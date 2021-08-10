@@ -145,5 +145,35 @@ namespace Qorrect.Integration.Services
             }
             return congnitiveLevels.ToList();
         }
+
+        public async Task<List<DTOItemFromBedoByIloResponse>> GetItemsByIlo(int IloId)
+        {
+            List<DTOItemFromBedoByIloResponse> items = new List<DTOItemFromBedoByIloResponse>();
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("spGetItemsByIlo", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@IloId", IloId);
+
+                    con.Open();
+                    SqlDataReader rdr = cmd.ExecuteReader();
+
+                    while (rdr.Read())
+                    {
+                        items.Add(new DTOItemFromBedoByIloResponse()
+                        {
+                            Question = rdr["Question"].ToString(),
+                            TimeLimit = Convert.ToInt32(rdr["TimeLimit"].ToString()),
+                            Shuffle = Convert.ToBoolean(rdr["Shuffle"].ToString()),
+                            TrueFalse = Convert.ToBoolean(rdr["TrueFalse"].ToString()),
+                            Answer = rdr["Answer"].ToString()
+                        });
+                    }
+                    con.Close();
+                }
+            }
+            return items.ToList();
+        }
     }
 }

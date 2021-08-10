@@ -11,9 +11,67 @@ namespace Qorrect.Integration.Models
         public string CourseSubscriptionId { get; set; }
     }
 
+    public class DTOAnswer
+    {
+        public string Text { get; set; }
+        public string PlainText { get; set; }
+        public string Comment { get; set; }
+        public object Hint { get; set; }
+        public object Feedback { get; set; }
+        public int Weight { get; set; }
+        public int Order { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
+    public class DTOSettings
+    {
+        public bool IsShuffleAnswers { get; set; }
+        public bool IsAllowForTrialExams { get; set; }
+        public int Difficulty { get; set; }
+        public int ExpectedTime { get; set; }
+        public bool IsAllowedForComputerBasedOnly { get; set; }
+    }
+
+    public class DTOStem
+    {
+        public string Text { get; set; }
+        public string PlainText { get; set; }
+        public List<DTOAnswer> Answers { get; set; }
+        public DTOSettings Settings { get; set; }
+        public string Comment { get; set; }
+        public object Hint { get; set; }
+        public object Feedback { get; set; }
+        public int Difficulty { get; set; }
+    }
+
+    public class DTOItemMapping
+    {
+        public Guid? LevelId { get; set; }
+        public Guid? IloId { get; set; }
+    }
+
+    public class DTOVersion
+    {
+        public DTOStem Stem { get; set; }
+        public int ItemClassification { get; set; }
+        public List<Guid?> Tags { get; set; }
+        public List<DTOItemMapping> ItemMappings { get; set; }
+    }
+
+    public class DTOAddQuestion
+    {
+        public Guid? ItemId { get; set; }
+        public Guid CourseSubscriptionId { get; set; }
+        public string MediaId { get; set; }
+        public string ClonedMediaId { get; set; }
+        public DTOVersion Version { get; set; }
+        public Guid? TransactionItemId { get; set; }
+    }
+
     public class DTOAddCourseLevelRequest
     {
         public string BearerToken { get; set; }
+        public Guid CourseSubscriptionId { get; set; }
         public int CourseId { get; set; }
         public Guid ParentId { get; set; }
     }
@@ -184,5 +242,14 @@ namespace Qorrect.Integration.Models
         public Guid? CourseStandardId { get; set; }
         public Guid CourseCognitiveLevelId { get; set; }
         public string CourseCognitiveLevelName { get; set; }
+    }
+
+    public class DTOItemFromBedoByIloResponse
+    {
+        public string Question { get; set; }
+        public int TimeLimit { get; set; }
+        public bool Shuffle { get; set; }
+        public string Answer { get; set; }
+        public bool TrueFalse { get; set; }
     }
 }
