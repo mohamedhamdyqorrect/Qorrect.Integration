@@ -107,6 +107,7 @@ namespace Qorrect.Integration.Services
                     {
                         Ilos.Add(new DTOBedoILO()
                         {
+                            Id = Convert.ToInt32(rdr["ID"].ToString()),
                             Name = rdr["Name"].ToString(),
                             Code = rdr["Code"].ToString(),
                             CognitiveName = rdr["CognitiveName"].ToString()

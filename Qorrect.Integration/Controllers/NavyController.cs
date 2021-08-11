@@ -152,7 +152,7 @@ namespace Qorrect.Integration.Controllers
             List<DTOBedoCongnitiveLevel> congnitiveLevels = new List<DTOBedoCongnitiveLevel>();
             List<DTOCognitiveLevelResponse> cognitiveLevelResponse = new List<DTOCognitiveLevelResponse>();
             List<DTOBedoILO> bedoIlos = new List<DTOBedoILO>();
-
+            List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
 
             var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(courseRequest.CourseId);
             congnitiveLevels = await courseDataAccessLayer.GetCongitive(courseRequest.CourseId);
@@ -246,27 +246,97 @@ namespace Qorrect.Integration.Controllers
                             foreach (var bedoIlo in bedoIlos)
                             {
 
-                                var clientILO = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
-                                clientILO.Timeout = -1;
-                                var requestILO = new RestRequest(Method.POST);
-                                requestILO.AddHeader("Authorization", token);
-                                requestILO.AddHeader("Content-Type", "application/json");
-                                var bodyILO = new DTOQorrectILORequest
                                 {
-                                    Name = bedoIlo.Name,
-                                    Code = bedoIlo.Code,
-                                    CourseCognitiveLevelId = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Id,
-                                    CourseCognitiveLevelName = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Name,
-                                    CourseId = courseRequest.ParentId
-                                };
-                                requestILO.AddParameter("application/json", JsonConvert.SerializeObject(bodyILO), ParameterType.RequestBody);
-                                IRestResponse responseILO = clientILO.Execute(requestILO);
-                                var resultILO = JsonConvert.DeserializeObject<DTOQorrectILORequest>(responseILO.Content);
-                                if (resultILO is null)
-                                {
-                                    return Ok(responseILO.Content);
+                                    var clientILO = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
+                                    clientILO.Timeout = -1;
+                                    var requestILO = new RestRequest(Method.POST);
+                                    requestILO.AddHeader("Authorization", token);
+                                    requestILO.AddHeader("Content-Type", "application/json");
+                                    var bodyILO = new DTOQorrectILORequest
+                                    {
+                                        Name = bedoIlo.Name,
+                                        Code = bedoIlo.Code,
+                                        CourseCognitiveLevelId = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Id,
+                                        CourseCognitiveLevelName = cognitiveLevelResponse.FirstOrDefault(a => a.Name.Equals(bedoIlo.CognitiveName)).Name,
+                                        CourseId = courseRequest.ParentId
+                                    };
+                                    requestILO.AddParameter("application/json", JsonConvert.SerializeObject(bodyILO), ParameterType.RequestBody);
+                                    IRestResponse responseILO = clientILO.Execute(requestILO);
+                                    var resultILO = JsonConvert.DeserializeObject<DTOQorrectILORequest>(responseILO.Content);
+                                    if (resultILO is null)
+                                    {
+                                        return Ok(responseILO.Content);
+                                    }
+                                    ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                                 }
-                                ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
+
+                                #region Get Questions from bedo by Ilo
+
+                                {
+                                    BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
+                                    foreach (var question in BedoQueastionsWithAnswers)
+                                    {
+                                        List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
+                                        foreach (var answer in question.Answers)
+                                        {
+                                            dTOAnswers.Add(new DTOAnswer
+                                            {
+                                                Text = answer.Answer,
+                                                PlainText = answer.Answer,
+                                                IsCorrect = answer.TrueFalse
+                                            });
+                                        }
+
+
+                                        var client = new RestClient($"{QorrectBaseUrl}/item/mcq");
+                                        client.Timeout = -1;
+                                        var request = new RestRequest(Method.POST);
+                                        request.AddHeader("Authorization", token);
+                                        request.AddHeader("Content-Type", "application/json");
+                                        var body = new DTOAddQuestion
+                                        {
+                                            CourseSubscriptionId = courseRequest.CourseSubscriptionId,
+                                            Version = new DTOVersion
+                                            {
+                                                Stem = new DTOStem
+                                                {
+                                                    Text = question.Stem,
+                                                    PlainText = question.Stem,
+                                                    Comment = "no",
+                                                    Difficulty = 0,
+                                                    Settings = new DTOSettings
+                                                    {
+                                                        IsShuffleAnswers = true,
+                                                        IsAllowForTrialExams = true,
+                                                        Difficulty = 1,
+                                                        ExpectedTime = 1,
+                                                        IsAllowedForComputerBasedOnly = true
+                                                    },
+                                                    Answers = dTOAnswers
+                                                },
+                                                ItemClassification = 1,
+                                                Tags = new List<Guid?>(),
+                                                ItemMappings = new List<DTOItemMapping>
+                                                {
+                                                    //new DTOItemMapping
+                                                    //{
+                                                    //    IloId = 
+                                                    //}
+                                                }
+                                            },
+
+
+                                        };
+                                        request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                                        IRestResponse response = client.Execute(request);
+
+
+
+                                    }
+                                }
+
+                                #endregion
+
                             }
 
                         }
