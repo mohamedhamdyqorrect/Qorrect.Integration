@@ -272,9 +272,49 @@ namespace Qorrect.Integration.Controllers
                                     ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                                 }
 
-                                #region Get Questions from bedo by Ilo
+                            }
 
+                        }
+
+                        #endregion
+
+                        #region Add Lesson
+
+                        DTOAddEditNodeLevel resultleaf = new DTOAddEditNodeLevel();
+
+                        {
+                            {
+                                var body = new CourseLeaf
                                 {
+                                    Code = node.Code,
+                                    Name = node.Name,
+                                    Order = node.Order,
+                                    ParentId = unitResponse.Id.Value,
+                                    IntendedLearningOutcomes = ListOfIlOsInserted
+                                };
+
+                                var client = new RestClient($"{QorrectBaseUrl}/courses/leaf");
+                                client.Timeout = -1;
+                                var request = new RestRequest(Method.POST);
+                                request.AddHeader("Authorization", token);
+                                request.AddHeader("Content-Type", "application/json");
+                                request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                                IRestResponse response = client.Execute(request);
+
+                                resultleaf = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(response.Content);
+                                if (resultleaf is null)
+                                {
+                                    return Ok(response.Content);
+                                }
+
+                            }
+
+                            #region Get Questions from bedo by Ilo
+
+                            {
+                                foreach (var bedoIlo in bedoIlos)
+                                {
+
                                     BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
                                     foreach (var question in BedoQueastionsWithAnswers)
                                     {
@@ -323,54 +363,23 @@ namespace Qorrect.Integration.Controllers
                                                     new DTOItemMapping
                                                     {
                                                         IloId = Guid.Parse(resultILO.Id.ToString()),
-                                                        //LevelId = 
+                                                        LevelId =  resultleaf.Id
                                                     }
                                                 }
                                             },
-
+                                            TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
 
                                         };
                                         request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                                         IRestResponse response = client.Execute(request);
 
-
-
                                     }
+
                                 }
 
-                                #endregion
-
                             }
 
-                        }
-
-                        #endregion
-
-                        #region Add Lesson
-
-                        {
-                            var body = new CourseLeaf
-                            {
-                                Code = node.Code,
-                                Name = node.Name,
-                                Order = node.Order,
-                                ParentId = unitResponse.Id.Value,
-                                IntendedLearningOutcomes = ListOfIlOsInserted
-                            };
-
-                            var client = new RestClient($"{QorrectBaseUrl}/courses/leaf");
-                            client.Timeout = -1;
-                            var request = new RestRequest(Method.POST);
-                            request.AddHeader("Authorization", token);
-                            request.AddHeader("Content-Type", "application/json");
-                            request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
-                            IRestResponse response = client.Execute(request);
-
-                            var resultleaf = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(response.Content);
-                            if (resultleaf is null)
-                            {
-                                return Ok(response.Content);
-                            }
+                            #endregion
                         }
 
                         #endregion
