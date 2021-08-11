@@ -239,6 +239,8 @@ namespace Qorrect.Integration.Controllers
                     foreach (var node in item.Lessons)
                     {
 
+                        DTOQorrectILORequest resultILO = new DTOQorrectILORequest();
+
                         #region Get Ilos from Bedo
 
                         {
@@ -262,7 +264,7 @@ namespace Qorrect.Integration.Controllers
                                     };
                                     requestILO.AddParameter("application/json", JsonConvert.SerializeObject(bodyILO), ParameterType.RequestBody);
                                     IRestResponse responseILO = clientILO.Execute(requestILO);
-                                    var resultILO = JsonConvert.DeserializeObject<DTOQorrectILORequest>(responseILO.Content);
+                                    resultILO = JsonConvert.DeserializeObject<DTOQorrectILORequest>(responseILO.Content);
                                     if (resultILO is null)
                                     {
                                         return Ok(responseILO.Content);
@@ -318,10 +320,11 @@ namespace Qorrect.Integration.Controllers
                                                 Tags = new List<Guid?>(),
                                                 ItemMappings = new List<DTOItemMapping>
                                                 {
-                                                    //new DTOItemMapping
-                                                    //{
-                                                    //    IloId = 
-                                                    //}
+                                                    new DTOItemMapping
+                                                    {
+                                                        IloId = Guid.Parse(resultILO.Id.ToString()),
+                                                        //LevelId = 
+                                                    }
                                                 }
                                             },
 
