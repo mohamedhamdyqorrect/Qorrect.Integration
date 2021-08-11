@@ -246,10 +246,17 @@ namespace Qorrect.Integration.Models
 
     public class DTOItemFromBedoByIloResponse
     {
-        public string Question { get; set; }
-        public int TimeLimit { get; set; }
-        public bool Shuffle { get; set; }
+        public int Id { get; set; }
+        public string Stem { get; set; }
+        public List<DTOItemAnswersFromBedoByIloResponse> Answers { get; set; }
+    }
+
+    public class DTOItemAnswersFromBedoByIloResponse
+    {
+        public int QuestionId { get; set; }
         public string Answer { get; set; }
         public bool TrueFalse { get; set; }
+
     }
 }
+

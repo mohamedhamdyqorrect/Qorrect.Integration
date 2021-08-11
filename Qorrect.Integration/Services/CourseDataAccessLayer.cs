@@ -156,24 +156,35 @@ namespace Qorrect.Integration.Services
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@IloId", IloId);
 
-                    con.Open();
-                    SqlDataReader rdr = cmd.ExecuteReader();
-
-                    while (rdr.Read())
+                    using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                     {
-                        items.Add(new DTOItemFromBedoByIloResponse()
+                        using (DataSet ds = new DataSet())
                         {
-                            Question = rdr["Question"].ToString(),
-                            TimeLimit = Convert.ToInt32(rdr["TimeLimit"].ToString()),
-                            Shuffle = Convert.ToBoolean(rdr["Shuffle"].ToString()),
-                            TrueFalse = Convert.ToBoolean(rdr["TrueFalse"].ToString()),
-                            Answer = rdr["Answer"].ToString()
-                        });
+                            da.Fill(ds);
+                            con.Close();
+
+                            if (ds.Tables[1].Rows.Count > 1)
+                            {
+                                items = ds.Tables[0].AsEnumerable().Select(QdataRow => new DTOItemFromBedoByIloResponse
+                                {
+                                    Id = QdataRow.Field<int>("QuestionID"),
+                                    Stem = QdataRow.Field<string>("Question"),
+                                    Answers = ds.Tables[1].AsEnumerable().Select(AdataRow => new DTOItemAnswersFromBedoByIloResponse
+                                    {
+                                        QuestionId = AdataRow.Field<int>("QuestionID"),
+                                        Answer = AdataRow.Field<string>("Answer"),
+                                        TrueFalse = AdataRow.Field<bool>("TrueFalse")
+                                    }).Where(a => a.QuestionId == QdataRow.Field<int>("QuestionID")).ToList()
+                                }).ToList();
+
+                            }
+                        }
+
                     }
-                    con.Close();
                 }
             }
             return items.ToList();
+
         }
     }
 }
