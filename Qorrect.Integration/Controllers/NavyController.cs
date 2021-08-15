@@ -367,7 +367,7 @@ namespace Qorrect.Integration.Controllers
                                                     }
                                                 }
                                             },
-                                            TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+                                            TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // Please don't forget to change
 
                                         };
                                         request.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
