@@ -673,7 +673,7 @@ namespace Qorrect.Integration.Controllers
                                         {
 
                                             BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
-                                            foreach (var question in BedoQueastionsWithAnswers)
+                                            foreach (var question in BedoQueastionsWithAnswers.Where(x => x.QuestionTypeID == 1))
                                             {
                                                 List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
                                                 foreach (var answer in question.Answers)
@@ -731,6 +731,66 @@ namespace Qorrect.Integration.Controllers
                                                 IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
 
                                             }
+
+                                            #region Essay
+                                            foreach (var questionEssay in BedoQueastionsWithAnswers.Where(x => x.QuestionTypeID == 4))
+                                            {
+
+                                                Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
+                                                var Essayclient = new RestClient($"{QorrectBaseUrl}/item/Essay");
+                                                Essayclient.Timeout = -1;
+                                                var Essayrequest = new RestRequest(Method.POST);
+                                                Essayrequest.AddHeader("Authorization", token);
+                                                Essayrequest.AddHeader("Content-Type", "application/json");
+                                                var Essaybody = new DTOAddEssayQuestion
+                                                {
+                                                    CourseSubscriptionId = CourseSubscriptionId,
+                                                    Version = new DTOEssayVersion
+                                                    {
+
+                                                        Stem = new DTOEssayStem
+                                                        {
+                                                            Direction = "FromBedo",
+                                                            Text = questionEssay.Stem,
+                                                            PlainText = questionEssay.Stem,
+                                                            Answer = new DTOEssayAnswer
+                                                            {
+                                                                modelAnswer = "From Bedo",
+                                                                modelAnswerPlainText = "From Bedo"
+
+                                                            },
+                                                            Comment = "no",
+                                                            Difficulty = 0,
+                                                            Settings = new DTOSettings
+                                                            {
+                                                                IsShuffleAnswers = true,
+                                                                IsAllowForTrialExams = true,
+                                                                Difficulty = 1,
+                                                                ExpectedTime = 1,
+                                                                IsAllowedForComputerBasedOnly = true
+                                                            },
+                                                            //  Answers = dTOAnswers
+                                                        },
+                                                        ItemClassification = 1,
+                                                        Tags = new List<Guid?>(),
+                                                        ItemMappings = new List<DTOItemMapping>
+                                                {
+                                                    new DTOItemMapping
+                                                    {
+                                                        IloId = Guid.Parse(resultILO.Id.ToString()),
+                                                        LevelId =  resultleaf.Id
+                                                    }
+                                                }
+                                                    },
+                                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+
+                                                };
+                                                Essayrequest.AddParameter("application/json", JsonConvert.SerializeObject(Essaybody), ParameterType.RequestBody);
+                                                IRestResponse Essayresponse = Essayclient.Execute(Essayrequest);
+
+                                            }
+                                            #endregion
+
 
                                         }
 

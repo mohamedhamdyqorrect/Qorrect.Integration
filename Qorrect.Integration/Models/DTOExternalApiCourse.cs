@@ -23,6 +23,18 @@ namespace Qorrect.Integration.Models
         public bool IsCorrect { get; set; }
     }
 
+    public class DTOEssayAnswer
+    {
+        public string modelAnswer { get; set; }
+        public string modelAnswerPlainText { get; set; }
+        public string Comment { get; set; }
+        public object Hint { get; set; }
+        public object Feedback { get; set; }
+        public int Weight { get; set; }
+        public int Order { get; set; }
+        public bool IsCorrect { get; set; }
+    }
+
     public class DTOSettings
     {
         public bool IsShuffleAnswers { get; set; }
@@ -43,6 +55,18 @@ namespace Qorrect.Integration.Models
         public object Feedback { get; set; }
         public int Difficulty { get; set; }
     }
+    public class DTOEssayStem
+    {
+        public string Text { get; set; }
+        public string PlainText { get; set; }
+        public string Direction { get; set; }
+        public DTOEssayAnswer Answer { get; set; }
+        public DTOSettings Settings { get; set; }
+        public string Comment { get; set; }
+        public object Hint { get; set; }
+        public object Feedback { get; set; }
+        public int Difficulty { get; set; }
+    }
 
     public class DTOItemMapping
     {
@@ -57,6 +81,14 @@ namespace Qorrect.Integration.Models
         public List<Guid?> Tags { get; set; }
         public List<DTOItemMapping> ItemMappings { get; set; }
     }
+    public class DTOEssayVersion
+    {
+        public DTOEssayStem Stem { get; set; }
+        public int ItemClassification { get; set; }
+
+        public List<Guid?> Tags { get; set; }
+        public List<DTOItemMapping> ItemMappings { get; set; }
+    }
 
     public class DTOAddQuestion
     {
@@ -65,6 +97,15 @@ namespace Qorrect.Integration.Models
         public string MediaId { get; set; }
         public string ClonedMediaId { get; set; }
         public DTOVersion Version { get; set; }
+        public Guid? TransactionItemId { get; set; }
+    }
+    public class DTOAddEssayQuestion
+    {
+        public Guid? ItemId { get; set; }
+        public Guid CourseSubscriptionId { get; set; }
+        public string MediaId { get; set; }
+        public string ClonedMediaId { get; set; }
+        public DTOEssayVersion Version { get; set; }
         public Guid? TransactionItemId { get; set; }
     }
 
@@ -248,6 +289,7 @@ namespace Qorrect.Integration.Models
     public class DTOItemFromBedoByIloResponse
     {
         public int Id { get; set; }
+        public int QuestionTypeID { get; set; }
         public string Stem { get; set; }
         public List<DTOItemAnswersFromBedoByIloResponse> Answers { get; set; }
     }
@@ -255,6 +297,7 @@ namespace Qorrect.Integration.Models
     public class DTOItemAnswersFromBedoByIloResponse
     {
         public int QuestionId { get; set; }
+        public int QuestionTypeID { get; set; }
         public string Answer { get; set; }
         public bool TrueFalse { get; set; }
 
