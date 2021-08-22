@@ -302,5 +302,26 @@ namespace Qorrect.Integration.Models
         public bool TrueFalse { get; set; }
 
     }
+
+
+    public class DTOCourseDupplicationResponse
+    {
+        public int totalCountWithoutFilter { get; set; }
+        public List<DTOCourseFilterList> list { get; set; }
+
+    }
+
+    public class DTOCourseFilterList
+    {
+        public string id { get; set; }
+        public string name { get; set; }
+        public string code { get; set; }
+        public object itemSummary { get; set; }
+        public DateTime lastViewed { get; set; }
+        public int tagsCount { get; set; }
+        public int itemsCount { get; set; }
+        public List<object> courseTags { get; set; }
+        public DateTime createdAt { get; set; }
+    }
 }
 

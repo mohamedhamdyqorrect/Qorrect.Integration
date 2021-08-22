@@ -41,6 +41,33 @@ namespace Qorrect.Integration.Controllers
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
             List<DTOCognitiveLevelResponse> cognitiveLevelResponses = new List<DTOCognitiveLevelResponse>();
 
+            List<DTOCourseFilterList> CoursesSearchCriteria = new List<DTOCourseFilterList>();
+
+            foreach (var item in bedoCourses.ToList())
+            {
+                #region Restrict Dupplicate Courses
+                {
+                    var client = new RestClient($"{QorrectBaseUrl}/courses?courseSubscriptionId={courseRequest.CourseSubscriptionId}&searchQuery={item.CourseCode}&page=1&pageSize=10");
+                    client.Timeout = -1;
+                    var request = new RestRequest(Method.GET);
+                    request.AddHeader("accept", "*/*");
+                    request.AddHeader("Authorization", token);
+                    IRestResponse response = client.Execute(request);
+                    var result = JsonConvert.DeserializeObject<DTOCourseDupplicationResponse>(response.Content);
+                    if (result == null)
+                    {
+                        return Ok(response.Content);
+                    }
+                    CoursesSearchCriteria = result.list;
+
+                    if (CoursesSearchCriteria.Count > 0)
+                    {
+                        bedoCourses.Remove(item);
+                    }
+                }
+                #endregion
+            }
+
             foreach (var item in bedoCourses)
             {
                 DTOAddEditCourse model = new DTOAddEditCourse()
@@ -60,20 +87,22 @@ namespace Qorrect.Integration.Controllers
                     }
                 };
 
-                var client = new RestClient($"{QorrectBaseUrl}/courses");
-                client.Timeout = -1;
-                var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", token);
-                request.AddHeader("Content-Type", "application/json");
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
-                IRestResponse response = client.Execute(request);
-                var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
-                if (result == null)
                 {
-                    return Ok(response.Content);
+                    var client = new RestClient($"{QorrectBaseUrl}/courses");
+                    client.Timeout = -1;
+                    var request = new RestRequest(Method.POST);
+                    request.AddHeader("Authorization", token);
+                    request.AddHeader("Content-Type", "application/json");
+
+                    request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
+                    IRestResponse response = client.Execute(request);
+                    var result = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
+                    if (result == null)
+                    {
+                        return Ok(response.Content);
+                    }
+                    addedCoursed.Add(result);
                 }
-                addedCoursed.Add(result);
             }
 
             foreach (var item in addedCoursed)
