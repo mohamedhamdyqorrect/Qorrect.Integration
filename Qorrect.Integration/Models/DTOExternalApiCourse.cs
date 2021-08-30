@@ -9,6 +9,7 @@ namespace Qorrect.Integration.Models
     {
         public string BearerToken { get; set; }
         public string CourseSubscriptionId { get; set; }
+        public List<DTOBedoCourse> Courses { get; set; }
     }
 
     public class DTOAnswer
@@ -107,29 +108,6 @@ namespace Qorrect.Integration.Models
         public string ClonedMediaId { get; set; }
         public DTOEssayVersion Version { get; set; }
         public Guid? TransactionItemId { get; set; }
-    }
-
-    public class DTOAddCourseLevelRequest
-    {
-        public string BearerToken { get; set; }
-        public Guid CourseSubscriptionId { get; set; }
-        public int CourseId { get; set; }
-        public Guid ParentId { get; set; }
-    }
-
-    public class DTOExternalApiCourse
-    {
-        public List<DTOCourses> courses { get; set; }
-    }
-
-    public class DTOCourses
-    {
-        public string fullname { get; set; }
-        public string shortname { get; set; }
-        public int categoryid { get; set; }
-        public string summary { get; set; }
-        public string categoryname { get; set; }
-
     }
 
     public class DTOAddEditCourse
@@ -301,27 +279,6 @@ namespace Qorrect.Integration.Models
         public string Answer { get; set; }
         public bool TrueFalse { get; set; }
 
-    }
-
-
-    public class DTOCourseDupplicationResponse
-    {
-        public int totalCountWithoutFilter { get; set; }
-        public List<DTOCourseFilterList> list { get; set; }
-
-    }
-
-    public class DTOCourseFilterList
-    {
-        public string id { get; set; }
-        public string name { get; set; }
-        public string code { get; set; }
-        public object itemSummary { get; set; }
-        public DateTime lastViewed { get; set; }
-        public int tagsCount { get; set; }
-        public int itemsCount { get; set; }
-        public List<object> courseTags { get; set; }
-        public DateTime createdAt { get; set; }
     }
 }
 
