@@ -187,5 +187,22 @@ namespace Qorrect.Integration.Services
             return items.ToList();
 
         }
+
+        public async Task<int> InvisibleAddedCourses(string ids)
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("spInvisibleAddedCourses", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@ids", ids);
+                    con.Open();
+                    SqlDataReader rdr = cmd.ExecuteReader();
+                    con.Close();
+                }
+            }
+            return 1;
+        }
+
     }
 }

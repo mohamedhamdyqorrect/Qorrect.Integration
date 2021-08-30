@@ -86,6 +86,7 @@ namespace Qorrect.Integration.Controllers
                 request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
                 var item = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
+
                 #region Apply Outline structure to course
 
                 {
@@ -438,6 +439,13 @@ namespace Qorrect.Integration.Controllers
                 }
                 #endregion
 
+
+                #region Invisible Added bedo Cousres
+                {
+                    string ids = string.Join(", ", courseRequest.Courses.Select(p => p.Id));
+                    var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
+                }
+                #endregion
 
             }
 
