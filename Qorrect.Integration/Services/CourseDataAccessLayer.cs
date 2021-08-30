@@ -197,7 +197,7 @@ namespace Qorrect.Integration.Services
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ids", ids);
                     con.Open();
-                    await cmd.ExecuteNonQueryAsync();
+                    cmd.ExecuteNonQuery();
                     con.Close();
                 }
             }
