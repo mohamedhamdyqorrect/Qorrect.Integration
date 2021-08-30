@@ -197,7 +197,7 @@ namespace Qorrect.Integration.Services
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.Parameters.AddWithValue("@ids", ids);
                     con.Open();
-                    SqlDataReader rdr = cmd.ExecuteReader();
+                    await cmd.ExecuteNonQueryAsync();
                     con.Close();
                 }
             }
