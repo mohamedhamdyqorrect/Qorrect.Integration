@@ -439,15 +439,14 @@ namespace Qorrect.Integration.Controllers
                 }
                 #endregion
 
-
-                #region Invisible Added bedo Cousres
-                {
-                    string ids = string.Join(", ", courseRequest.Courses.Select(p => p.Id));
-                    var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
-                }
-                #endregion
-
             }
+
+            #region Invisible Added bedo Cousres
+            {
+                string ids = string.Join(", ", courseRequest.Courses.Select(p => p.Id));
+                var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
+            }
+            #endregion
 
             return Ok(addedCoursed);
         }
