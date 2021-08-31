@@ -28,7 +28,7 @@ namespace Qorrect.Integration.Controllers
 
         [HttpGet]
         [Route("CourseList")]
-        public async Task<IActionResult> CourseList(string wstoken)
+        public async Task<IActionResult> CourseList([FromQuery] string wstoken)
         {
             var client = new RestClient("http://ahmadhafez-001-site1.ftempurl.com/webservice/rest/server.php");
             client.Timeout = -1;
