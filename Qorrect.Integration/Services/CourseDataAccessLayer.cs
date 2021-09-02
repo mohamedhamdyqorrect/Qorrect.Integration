@@ -170,6 +170,7 @@ namespace Qorrect.Integration.Services
                                 {
                                     Id = QdataRow.Field<int>("QuestionID"),
                                     Stem = QdataRow.Field<string>("Question"),
+                                    QuestionTypeID = QdataRow.Field<int>("QuestionTypeID"),
                                     Answers = ds.Tables[1].AsEnumerable().Select(AdataRow => new DTOItemAnswersFromBedoByIloResponse
                                     {
                                         QuestionId = AdataRow.Field<int>("QuestionID"),
