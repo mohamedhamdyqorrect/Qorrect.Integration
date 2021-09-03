@@ -39,6 +39,13 @@ namespace Qorrect.Integration
                 RequestPath = new PathString("/DataSource")
             });
 
+            app.UseStaticFiles(new StaticFileOptions()
+            {
+                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "Upload")),
+                RequestPath = new PathString("/Upload")
+            });
+
+
             app.UseHttpsRedirection();
 
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());

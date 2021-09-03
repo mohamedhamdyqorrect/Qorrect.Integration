@@ -128,6 +128,7 @@ namespace Qorrect.Integration.Controllers
         [Route("LoadQuestionsFromXML")]
         public async Task<IActionResult> LoadQuestionsFromXML()
         {
+
             string xmlfile = Path.Combine(this._webHostEnvironment.ContentRootPath, "DataSource/") + "Quiz.xml";
             XDocument xmlDoc = XDocument.Load(xmlfile);
             IEnumerable<XElement> quizes = xmlDoc.Descendants("question");
@@ -137,6 +138,16 @@ namespace Qorrect.Integration.Controllers
                 string qName = quiz.Element("name").Element("text").Value;
                 string qText = quiz.Element("questiontext").Element("text").Value;
                 string qFile = quiz.Element("questiontext").Element("file").Value;
+                string fileName = quiz.Element("questiontext").Element("file").Attribute("name").Value;
+
+                #region Convert Image File to Base64 Encoded string
+
+                string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
+                System.IO.File.WriteAllBytes(uploadedPath + fileName, Convert.FromBase64String(qFile));
+
+                #endregion
+
+
                 IEnumerable<XElement> answers = quiz.Elements("answer");
                 foreach (var answer in answers)
                 {
