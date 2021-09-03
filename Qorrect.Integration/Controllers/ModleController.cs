@@ -124,10 +124,12 @@ namespace Qorrect.Integration.Controllers
             return Ok();
         }
 
-        [HttpGet]
+
+        [HttpPost]
         [Route("LoadQuestionsFromXML")]
-        public async Task<IActionResult> LoadQuestionsFromXML()
+        public async Task<IActionResult> LoadQuestionsFromXML([FromBody] DTOAddCourseRequest courseRequest)
         {
+            string token = $"Bearer {courseRequest.BearerToken}";
 
             string xmlfile = Path.Combine(this._webHostEnvironment.ContentRootPath, "DataSource/") + "Quiz.xml";
             XDocument xmlDoc = XDocument.Load(xmlfile);
@@ -148,11 +150,66 @@ namespace Qorrect.Integration.Controllers
                 #endregion
 
 
+
+                List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
                 IEnumerable<XElement> answers = quiz.Elements("answer");
                 foreach (var answer in answers)
                 {
-                    string aText = answer.Element("text").Value;
+
+                    dTOAnswers.Add(new DTOAnswer
+                    {
+                        Text = answer.Element("text").Value,
+                        IsCorrect = false
+                    });
                 }
+
+
+                Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
+                var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
+                mcqclient.Timeout = -1;
+                var mcqrequest = new RestRequest(Method.POST);
+                mcqrequest.AddHeader("Authorization", token);
+                mcqrequest.AddHeader("Content-Type", "application/json");
+
+                var body = new DTOAddQuestion
+                {
+                    CourseSubscriptionId = CourseSubscriptionId,
+                    Version = new DTOVersion
+                    {
+                        Stem = new DTOStem
+                        {
+                            Text = qText,
+                            PlainText = qName,
+                            Comment = "no",
+                            Difficulty = 0,
+                            Settings = new DTOSettings
+                            {
+                                IsShuffleAnswers = true,
+                                IsAllowForTrialExams = true,
+                                Difficulty = 1,
+                                ExpectedTime = 1,
+                                IsAllowedForComputerBasedOnly = true
+                            },
+                            Answers = dTOAnswers
+                        },
+                        ItemClassification = 1,
+                        Tags = new List<Guid?>(),
+                        ItemMappings = new List<DTOItemMapping>()
+                                                //{
+                                                //    new DTOItemMapping
+                                                //    {
+                                                //        IloId = Guid.Parse(resultILO.Id.ToString()),
+                                                //        LevelId =  resultleaf.Id
+                                                //    }
+                                                //}
+                    },
+                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+
+                };
+                mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
+
+
             }
 
             return Ok(quizes);
