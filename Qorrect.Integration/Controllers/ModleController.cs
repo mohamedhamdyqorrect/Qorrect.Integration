@@ -145,7 +145,7 @@ namespace Qorrect.Integration.Controllers
                 #region Convert Image File to Base64 Encoded string
 
                 string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
-                System.IO.File.WriteAllBytes(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
 
                 #endregion
 
@@ -193,19 +193,19 @@ namespace Qorrect.Integration.Controllers
                         ItemClassification = 1,
                         Tags = new List<Guid?>(),
                         ItemMappings = new List<DTOItemMapping>()
-                                                //{
-                                                //    new DTOItemMapping
-                                                //    {
-                                                //        IloId = Guid.Parse(resultILO.Id.ToString()),
-                                                //        LevelId =  resultleaf.Id
-                                                //    }
-                                                //}
+                        //{
+                        //    new DTOItemMapping
+                        //    {
+                        //        IloId = Guid.Parse(resultILO.Id.ToString()),
+                        //        LevelId =  resultleaf.Id
+                        //    }
+                        //}
                     },
                     TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
 
                 };
                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
-                IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
+                IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
 
             }
 
