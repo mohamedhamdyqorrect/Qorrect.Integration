@@ -149,8 +149,6 @@ namespace Qorrect.Integration.Controllers
 
                 #endregion
 
-
-
                 List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
                 IEnumerable<XElement> answers = quiz.Elements("answer");
                 foreach (var answer in answers)
@@ -208,7 +206,6 @@ namespace Qorrect.Integration.Controllers
                 };
                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                 IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
-
 
             }
 
