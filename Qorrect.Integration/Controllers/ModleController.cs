@@ -5,7 +5,14 @@ using Qorrect.Integration.Models;
 using RestSharp;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
+using System.Xml;
+using Microsoft.AspNetCore.Hosting;
+using System.Xml.Linq;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Qorrect.Integration.Controllers
 {
@@ -14,11 +21,15 @@ namespace Qorrect.Integration.Controllers
     public class ModleController : ControllerBase
     {
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _webHostEnvironment;
+
         public string QorrectBaseUrl { get; set; }
-        public ModleController(IConfiguration configuration)
+        public ModleController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _configuration = configuration;
             QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
+            _webHostEnvironment = webHostEnvironment;
+
         }
 
         [HttpPost]
@@ -108,11 +119,32 @@ namespace Qorrect.Integration.Controllers
                 }
                 #endregion
 
-
-
             }
 
             return Ok();
+        }
+
+        [HttpGet]
+        [Route("LoadQuestionsFromXML")]
+        public async Task<IActionResult> LoadQuestionsFromXML()
+        {
+            string xmlfile = Path.Combine(this._webHostEnvironment.ContentRootPath, "DataSource/") + "Quiz.xml";
+            XDocument xmlDoc = XDocument.Load(xmlfile);
+            IEnumerable<XElement> quizes = xmlDoc.Descendants("question");
+            foreach (var quiz in quizes)
+            {
+                string qType = quiz.Attribute("type").Value;
+                string qName = quiz.Element("name").Element("text").Value;
+                string qText = quiz.Element("questiontext").Element("text").Value;
+                string qFile = quiz.Element("questiontext").Element("file").Value;
+                IEnumerable<XElement> answers = quiz.Elements("answer");
+                foreach (var answer in answers)
+                {
+                    string aText = answer.Element("text").Value;
+                }
+            }
+
+            return Ok(quizes);
         }
     }
 }
