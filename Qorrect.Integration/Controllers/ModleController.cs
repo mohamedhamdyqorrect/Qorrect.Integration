@@ -46,7 +46,6 @@ namespace Qorrect.Integration.Controllers
             return Ok(JsonConvert.DeserializeObject<DTOTokenResponse>(response.Content));
         }
 
-
         [HttpGet]
         [Route("CourseList")]
         public async Task<IActionResult> CourseList([FromQuery] string wstoken)
@@ -65,61 +64,68 @@ namespace Qorrect.Integration.Controllers
 
         [HttpPost]
         [Route("ImportAllFromModle")]
-        public async Task<IActionResult> ImportAllFromModle([FromBody] DTOAddCourseRequest courseRequest)
+        public async Task<IActionResult> ImportAllFromModle([FromForm] DTOAddModleCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
 
-            foreach (var bedoCourseitem in courseRequest.Courses)
+            Cours Course = JsonConvert.DeserializeObject<Cours>(courseRequest.Course);
+
+            DTOAddEditCourse model = new DTOAddEditCourse()
             {
-                DTOAddEditCourse model = new DTOAddEditCourse()
+                Name = Course.fullname,
+                Code = Course.shortname,
+                CourseSubscriptionId = new Guid(courseRequest.CourseSubscriptionId),
+                CourseData = new DTOCourseData
                 {
-                    Name = bedoCourseitem.CourseName,
-                    Code = bedoCourseitem.CourseCode,
-                    CourseSubscriptionId = new Guid(courseRequest.CourseSubscriptionId),
-                    CourseData = new DTOCourseData
-                    {
-                        CourseType = CourseType.Elective,
-                        CreditHours = 100,
-                        Description = "No Description",
-                        LecturesHours = 60,
-                        PracticalHours = 20,
-                        TotalHours = 80,
-                        TotalMarks = 80
-                    }
+                    CourseType = CourseType.Elective,
+                    CreditHours = 100,
+                    Description = "No Description",
+                    LecturesHours = 60,
+                    PracticalHours = 20,
+                    TotalHours = 80,
+                    TotalMarks = 80
+                }
+            };
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
+
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await courseRequest.XMLFile.CopyToAsync(stream);
+            }
+
+
+            var client = new RestClient($"{QorrectBaseUrl}/courses");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.POST);
+            request.AddHeader("Authorization", token);
+            request.AddHeader("Content-Type", "application/json");
+
+            request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
+            IRestResponse response = await client.ExecuteAsync(request);
+            var item = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
+
+
+
+            #region Apply Outline structure to course
+
+            {
+                var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
+                applyOutlineclient.Timeout = -1;
+                var applyOutlinerequest = new RestRequest(Method.POST);
+                applyOutlinerequest.AddHeader("Authorization", token);
+                applyOutlinerequest.AddHeader("Content-Type", "application/json");
+
+                var body = new DTOApplyOutlineStructure
+                {
+                    Id = item.Id.Value
                 };
 
-                var client = new RestClient($"{QorrectBaseUrl}/courses");
-                client.Timeout = -1;
-                var request = new RestRequest(Method.POST);
-                request.AddHeader("Authorization", token);
-                request.AddHeader("Content-Type", "application/json");
-
-                request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
-                IRestResponse response = await client.ExecuteAsync(request);
-                var item = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
-
-
-
-                #region Apply Outline structure to course
-
-                {
-                    var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
-                    applyOutlineclient.Timeout = -1;
-                    var applyOutlinerequest = new RestRequest(Method.POST);
-                    applyOutlinerequest.AddHeader("Authorization", token);
-                    applyOutlinerequest.AddHeader("Content-Type", "application/json");
-
-                    var body = new DTOApplyOutlineStructure
-                    {
-                        Id = item.Id.Value
-                    };
-
-                    applyOutlinerequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
-                    IRestResponse applyOutlineresponse = await applyOutlineclient.ExecuteAsync(applyOutlinerequest);
-                }
-                #endregion
-
+                applyOutlinerequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                IRestResponse applyOutlineresponse = await applyOutlineclient.ExecuteAsync(applyOutlinerequest);
             }
+            #endregion
+
 
             return Ok();
         }
@@ -201,7 +207,7 @@ namespace Qorrect.Integration.Controllers
                         //    }
                         //}
                     },
-                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
                 };
                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);

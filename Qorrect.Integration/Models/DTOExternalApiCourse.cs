@@ -1,4 +1,5 @@
-﻿using Qorrect.Integration.Helper;
+﻿using Microsoft.AspNetCore.Http;
+using Qorrect.Integration.Helper;
 using System;
 using System.Collections.Generic;
 
@@ -10,6 +11,14 @@ namespace Qorrect.Integration.Models
         public string BearerToken { get; set; }
         public string CourseSubscriptionId { get; set; }
         public List<DTOBedoCourse> Courses { get; set; }
+    }
+
+    public class DTOAddModleCourseRequest
+    {
+        public string BearerToken { get; set; }
+        public string CourseSubscriptionId { get; set; }
+        public IFormFile XMLFile { get; set; }
+        public string Course { get; set; }
     }
 
     public class DTOAnswer
