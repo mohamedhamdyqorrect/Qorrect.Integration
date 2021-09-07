@@ -5,13 +5,10 @@ using Qorrect.Integration.Models;
 using RestSharp;
 using Microsoft.Extensions.Configuration;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
-using System.Xml;
 using Microsoft.AspNetCore.Hosting;
 using System.Xml.Linq;
-using System.Collections;
 using System.Collections.Generic;
 
 namespace Qorrect.Integration.Controllers
@@ -67,9 +64,7 @@ namespace Qorrect.Integration.Controllers
         public async Task<IActionResult> ImportAllFromModle([FromForm] DTOAddModleCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
-
             Cours Course = JsonConvert.DeserializeObject<Cours>(courseRequest.Course);
-
             DTOAddEditCourse model = new DTOAddEditCourse()
             {
                 Name = Course.fullname,
@@ -87,13 +82,6 @@ namespace Qorrect.Integration.Controllers
                 }
             };
 
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
-
-            using (var stream = new FileStream(path, FileMode.Create))
-            {
-                await courseRequest.XMLFile.CopyToAsync(stream);
-            }
-
 
             var client = new RestClient($"{QorrectBaseUrl}/courses");
             client.Timeout = -1;
@@ -108,7 +96,6 @@ namespace Qorrect.Integration.Controllers
 
 
             #region Apply Outline structure to course
-
             {
                 var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
                 applyOutlineclient.Timeout = -1;
@@ -125,8 +112,219 @@ namespace Qorrect.Integration.Controllers
                 IRestResponse applyOutlineresponse = await applyOutlineclient.ExecuteAsync(applyOutlinerequest);
             }
             #endregion
+            Guid ParentId = Guid.Parse(item.Id.ToString());
+
+            var Unitsclient = new RestClient("http://ahmadhafez-001-site1.ftempurl.com/webservice/rest/server.php");
+            Unitsclient.Timeout = -1;
+            var Unitsrequest = new RestRequest(Method.GET);
+            Unitsrequest.AddParameter("wstoken", courseRequest.ModleToken, ParameterType.QueryString);
+            Unitsrequest.AddParameter("wsfunction", "core_course_get_contents", ParameterType.QueryString);
+            Unitsrequest.AddParameter("courseid", Course.id, ParameterType.QueryString);
+            Unitsrequest.AddParameter("moodlewsrestformat", "json", ParameterType.QueryString);
+            IRestResponse Unitsresponse = await Unitsclient.ExecuteAsync(Unitsrequest);
+            List<ModelUnit> ModelCourseLevels = JsonConvert.DeserializeObject<List<ModelUnit>>(Unitsresponse.Content);
+            int unitOrder = 1;
+            DTOAddEditNodeLevel unitResponse = new DTOAddEditNodeLevel();
+            foreach (var bedoCourseLevelitem in ModelCourseLevels)
+            {
+
+                #region Add Node level authorized by teacher
+
+                {
+                    var nodeclient = new RestClient($"{QorrectBaseUrl}/courses/node");
+                    nodeclient.Timeout = -1;
+                    var noderequest = new RestRequest(Method.POST);
+                    noderequest.AddHeader("Authorization", token);
+                    noderequest.AddHeader("Content-Type", "application/json");
+                    var body = new DTOAddEditNodeLevel
+                    {
+                        Code = bedoCourseLevelitem.name,
+                        Name = bedoCourseLevelitem.name,
+                        Order = unitOrder,
+                        ParentId = ParentId
+                    };
+
+                    noderequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                    IRestResponse noderesponse = nodeclient.Execute(noderequest);
+                    unitResponse = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(noderesponse.Content);
+                    unitOrder = unitOrder++;
+                    if (unitResponse is null)
+                    {
+                        return Ok(noderesponse.Content);
+                    }
 
 
+
+                    #region Add Leaf Level to course outline
+
+                    {
+                        List<Guid> ListOfIlOsInserted = new List<Guid>();
+                        int LessonOrder = 1;
+                        foreach (var node in bedoCourseLevelitem.modules)
+                        {
+
+                            DTOQorrectILORequest resultILO = new DTOQorrectILORequest();
+
+                            #region Add Lesson
+
+                            DTOAddEditNodeLevel resultleaf = new DTOAddEditNodeLevel();
+
+                            {
+                                {
+                                    var Lessonbody = new CourseLeaf
+                                    {
+                                        Code = node.name,
+                                        Name = node.name,
+                                        Order = LessonOrder,
+                                        ParentId = unitResponse.Id.Value,
+                                        // IntendedLearningOutcomes =null// ListOfIlOsInserted
+                                    };
+
+                                    var leafclient = new RestClient($"{QorrectBaseUrl}/courses/leaf");
+                                    leafclient.Timeout = -1;
+                                    var leafrequest = new RestRequest(Method.POST);
+                                    leafrequest.AddHeader("Authorization", token);
+                                    leafrequest.AddHeader("Content-Type", "application/json");
+                                    leafrequest.AddParameter("application/json", JsonConvert.SerializeObject(Lessonbody), ParameterType.RequestBody);
+                                    IRestResponse leafresponse = leafclient.Execute(leafrequest);
+
+                                    resultleaf = JsonConvert.DeserializeObject<DTOAddEditNodeLevel>(leafresponse.Content);
+                                    if (resultleaf is null)
+                                    {
+                                        return Ok(leafresponse.Content);
+                                    }
+                                    LessonOrder = LessonOrder++;
+                                }
+
+                            }
+
+                            #endregion
+                            LessonOrder = 1;
+                        }
+
+                        #region Get Questions from bedo by Ilo
+
+                        {
+                            //foreach (var bedoIlo in bedoIlos)
+                            //{
+                            List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
+
+                            try
+                            {
+                                var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
+
+                                using (var stream = new FileStream(path, FileMode.Create))
+                                {
+                                    //await courseRequest.XMLFile.CopyToAsync(stream);
+                                    await courseRequest.XMLFile.CopyToAsync(stream);
+                                    BedoQueastionsWithAnswers = JsonConvert.DeserializeObject<List<DTOItemFromBedoByIloResponse>>(stream.ToString()); ;
+                                }
+                            }
+                            catch (Exception)
+                            {
+                            }
+                            {
+                                string xmlfile = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
+                                XDocument xmlDoc = XDocument.Load(xmlfile);
+                                IEnumerable<XElement> quizes = xmlDoc.Descendants("question");
+                                foreach (var quiz in quizes)
+                                {
+                                    string qFile = ""; string fileName = "";
+                                    string qType = quiz.Attribute("type").Value;
+                                    if (qType != "multichoice") { continue; }
+                                    string qName = quiz.Element("name").Element("text").Value;
+                                    string qText = quiz.Element("questiontext").Element("text").Value;
+
+
+                                    #region Convert Image File to Base64 Encoded string
+                                    try
+                                    {
+                                        fileName = quiz.Element("questiontext").Element("file").Attribute("name").Value;
+                                        qFile = quiz.Element("questiontext").Element("file").Value;
+                                        string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
+                                        await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                                    }
+                                    catch (Exception)
+                                    { }
+                                    #endregion
+
+                                    List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
+                                    IEnumerable<XElement> answers = quiz.Elements("answer");
+                                    foreach (var answer in answers)
+                                    {
+                                        //answer fraction="100" 
+                                        bool IsTrue = answer.Attribute("fraction").Value == "100";
+                                        dTOAnswers.Add(new DTOAnswer
+                                        {
+                                            PlainText = answer.Element("text").Value,
+                                            Text = answer.Element("text").Value,
+
+                                            IsCorrect = IsTrue
+                                        });
+                                    }
+
+
+                                    Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
+                                    var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
+                                    mcqclient.Timeout = -1;
+                                    var mcqrequest = new RestRequest(Method.POST);
+                                    mcqrequest.AddHeader("Authorization", token);
+                                    mcqrequest.AddHeader("Content-Type", "application/json");
+
+                                    var MCQbody = new DTOAddQuestion
+                                    {
+                                        CourseSubscriptionId = CourseSubscriptionId,
+                                        Version = new DTOVersion
+                                        {
+                                            Stem = new DTOStem
+                                            {
+                                                Text = qText,
+                                                PlainText = qName,
+                                                Comment = "no",
+                                                Difficulty = 0,
+                                                Settings = new DTOSettings
+                                                {
+                                                    IsShuffleAnswers = true,
+                                                    IsAllowForTrialExams = true,
+                                                    Difficulty = 1,
+                                                    ExpectedTime = 1,
+                                                    IsAllowedForComputerBasedOnly = true
+                                                },
+                                                Answers = dTOAnswers
+                                            },
+                                            ItemClassification = 1,
+                                            Tags = new List<Guid?>(),
+                                            ItemMappings = new List<DTOItemMapping>()
+                                            {
+                                                new DTOItemMapping
+                                                {
+                                                   // IloId = Guid.Parse(resultILO.Id.ToString()),
+                                                    //LevelId =  resultleaf.Id
+                                                   LevelId =  ParentId
+                                                }
+                                            }
+                                        },
+                                        TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
+
+                                    };
+                                    mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
+                                    IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+
+                                }
+
+
+                            }
+
+                        }
+
+                        #endregion
+                    }
+
+                    #endregion
+                }
+
+                #endregion
+            }
             return Ok();
         }
 
@@ -159,11 +357,13 @@ namespace Qorrect.Integration.Controllers
                 IEnumerable<XElement> answers = quiz.Elements("answer");
                 foreach (var answer in answers)
                 {
-
+                    //answer fraction="100" 
+                    bool IsTrue = answer.Attribute("fraction").Value == "100";
                     dTOAnswers.Add(new DTOAnswer
                     {
+
                         Text = answer.Element("text").Value,
-                        IsCorrect = false
+                        IsCorrect = IsTrue
                     });
                 }
 
@@ -175,7 +375,7 @@ namespace Qorrect.Integration.Controllers
                 mcqrequest.AddHeader("Authorization", token);
                 mcqrequest.AddHeader("Content-Type", "application/json");
 
-                var body = new DTOAddQuestion
+                var MCQbody = new DTOAddQuestion
                 {
                     CourseSubscriptionId = CourseSubscriptionId,
                     Version = new DTOVersion
@@ -210,7 +410,7 @@ namespace Qorrect.Integration.Controllers
                     TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
                 };
-                mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
+                mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
                 IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
 
             }

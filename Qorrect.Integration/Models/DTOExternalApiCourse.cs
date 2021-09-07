@@ -16,9 +16,12 @@ namespace Qorrect.Integration.Models
     public class DTOAddModleCourseRequest
     {
         public string BearerToken { get; set; }
+        public string ModleToken { get; set; }
         public string CourseSubscriptionId { get; set; }
         public IFormFile XMLFile { get; set; }
         public string Course { get; set; }
+
+        public string CourseID { get; set; }
     }
 
     public class DTOAnswer
