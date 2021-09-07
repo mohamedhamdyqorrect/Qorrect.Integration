@@ -201,91 +201,99 @@ namespace Qorrect.Integration.Controllers
                             LessonOrder = 1;
                         }
 
-                        #region Get Questions from bedo by Ilo
+                    }
 
+                    #endregion
+                }
+
+                #endregion
+            }
+
+            #region Get Questions from XML
+
+            {
+
+                List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
+
+                var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
+
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                    await courseRequest.XMLFile.CopyToAsync(stream);
+                }
+
+
+                {
+                    string xmlfile = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
+                    XDocument xmlDoc = XDocument.Load(xmlfile);
+                    IEnumerable<XElement> quizes = xmlDoc.Descendants("question");
+                    foreach (var quiz in quizes)
+                    {
+                        string qFile = ""; string fileName = "";
+                        string qType = quiz.Attribute("type").Value;
+                        if (qType != "multichoice") { continue; }
+                        string qName = quiz.Element("name").Element("text").Value;
+                        string qText = quiz.Element("questiontext").Element("text").Value;
+
+
+                        #region Convert Image File to Base64 Encoded string
+
+                        fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
+                        qFile = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Value;
+
+                        if (!string.IsNullOrWhiteSpace(qFile))
                         {
+                            string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
+                            await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                        }
 
-                            List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
+                        #endregion
 
-                            var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
-
-                            using (var stream = new FileStream(path, FileMode.Create))
+                        List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
+                        IEnumerable<XElement> answers = quiz.Elements("answer");
+                        foreach (var answer in answers)
+                        {
+                            bool IsTrue = answer.Attribute("fraction").Value == "100";
+                            dTOAnswers.Add(new DTOAnswer
                             {
-                                await courseRequest.XMLFile.CopyToAsync(stream);
-                            }
+                                PlainText = answer.Element("text").Value,
+                                Text = answer.Element("text").Value,
+                                IsCorrect = IsTrue
+                            });
+                        }
 
 
+                        Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
+                        var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
+                        mcqclient.Timeout = -1;
+                        var mcqrequest = new RestRequest(Method.POST);
+                        mcqrequest.AddHeader("Authorization", token);
+                        mcqrequest.AddHeader("Content-Type", "application/json");
+
+                        var MCQbody = new DTOAddQuestion
+                        {
+                            CourseSubscriptionId = CourseSubscriptionId,
+                            Version = new DTOVersion
                             {
-                                string xmlfile = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
-                                XDocument xmlDoc = XDocument.Load(xmlfile);
-                                IEnumerable<XElement> quizes = xmlDoc.Descendants("question");
-                                foreach (var quiz in quizes)
+                                Stem = new DTOStem
                                 {
-                                    string qFile = ""; string fileName = "";
-                                    string qType = quiz.Attribute("type").Value;
-                                    if (qType != "multichoice") { continue; }
-                                    string qName = quiz.Element("name").Element("text").Value;
-                                    string qText = quiz.Element("questiontext").Element("text").Value;
-
-
-                                    #region Convert Image File to Base64 Encoded string
-
-                                    fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
-                                    qFile = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Value;
-
-                                    if (!string.IsNullOrWhiteSpace(qFile))
+                                    Text = qText,
+                                    PlainText = qName,
+                                    Comment = "no",
+                                    Difficulty = 0,
+                                    Settings = new DTOSettings
                                     {
-                                        string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
-                                        await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
-                                    }
-
-                                    #endregion
-
-                                    List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
-                                    IEnumerable<XElement> answers = quiz.Elements("answer");
-                                    foreach (var answer in answers)
-                                    {
-                                        bool IsTrue = answer.Attribute("fraction").Value == "100";
-                                        dTOAnswers.Add(new DTOAnswer
-                                        {
-                                            PlainText = answer.Element("text").Value,
-                                            Text = answer.Element("text").Value,
-                                            IsCorrect = IsTrue
-                                        });
-                                    }
-
-
-                                    Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
-                                    var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
-                                    mcqclient.Timeout = -1;
-                                    var mcqrequest = new RestRequest(Method.POST);
-                                    mcqrequest.AddHeader("Authorization", token);
-                                    mcqrequest.AddHeader("Content-Type", "application/json");
-
-                                    var MCQbody = new DTOAddQuestion
-                                    {
-                                        CourseSubscriptionId = CourseSubscriptionId,
-                                        Version = new DTOVersion
-                                        {
-                                            Stem = new DTOStem
-                                            {
-                                                Text = qText,
-                                                PlainText = qName,
-                                                Comment = "no",
-                                                Difficulty = 0,
-                                                Settings = new DTOSettings
-                                                {
-                                                    IsShuffleAnswers = true,
-                                                    IsAllowForTrialExams = true,
-                                                    Difficulty = 1,
-                                                    ExpectedTime = 1,
-                                                    IsAllowedForComputerBasedOnly = true
-                                                },
-                                                Answers = dTOAnswers
-                                            },
-                                            ItemClassification = 1,
-                                            Tags = new List<Guid?>(),
-                                            ItemMappings = new List<DTOItemMapping>()
+                                        IsShuffleAnswers = true,
+                                        IsAllowForTrialExams = true,
+                                        Difficulty = 1,
+                                        ExpectedTime = 1,
+                                        IsAllowedForComputerBasedOnly = true
+                                    },
+                                    Answers = dTOAnswers
+                                },
+                                ItemClassification = 1,
+                                Tags = new List<Guid?>(),
+                                ItemMappings = new List<DTOItemMapping>()
                                             {
                                                 new DTOItemMapping
                                                 {
@@ -294,28 +302,21 @@ namespace Qorrect.Integration.Controllers
                                                    LevelId =  ParentId
                                                 }
                                             }
-                                        },
-                                        TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
+                            },
+                            TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
-                                    };
-                                    mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
-                                    IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+                        };
+                        mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
+                        IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
 
-                                }
-
-
-                            }
-
-                        }
-
-                        #endregion
                     }
 
-                    #endregion
+
                 }
 
-                #endregion
             }
+
+            #endregion
             return Ok();
         }
 
