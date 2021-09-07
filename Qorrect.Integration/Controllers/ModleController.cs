@@ -204,7 +204,7 @@ namespace Qorrect.Integration.Controllers
                         #region Get Questions from bedo by Ilo
 
                         {
-                         
+
                             List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
 
                             var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
@@ -212,7 +212,6 @@ namespace Qorrect.Integration.Controllers
                             using (var stream = new FileStream(path, FileMode.Create))
                             {
                                 await courseRequest.XMLFile.CopyToAsync(stream);
-                                BedoQueastionsWithAnswers = JsonConvert.DeserializeObject<List<DTOItemFromBedoByIloResponse>>(stream.ToString()); ;
                             }
 
 
@@ -231,10 +230,14 @@ namespace Qorrect.Integration.Controllers
 
                                     #region Convert Image File to Base64 Encoded string
 
-                                    fileName = quiz.Element("questiontext").Element("file").Attribute("name").Value;
-                                    qFile = quiz.Element("questiontext").Element("file").Value;
-                                    string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
-                                    await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                                    fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
+                                    qFile = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Value;
+
+                                    if (!string.IsNullOrWhiteSpace(qFile))
+                                    {
+                                        string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
+                                        await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                                    }
 
                                     #endregion
 
