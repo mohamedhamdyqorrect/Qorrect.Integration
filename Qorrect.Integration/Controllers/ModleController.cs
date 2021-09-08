@@ -5,6 +5,7 @@ using Qorrect.Integration.Models;
 using RestSharp;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
@@ -22,10 +23,12 @@ namespace Qorrect.Integration.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
 
         public string QorrectBaseUrl { get; set; }
+        public string MediaBaseUrl { get; set; }
         public ModleController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _configuration = configuration;
             QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
+            MediaBaseUrl = _configuration.GetValue<string>("MediaBaseUrl");
             _webHostEnvironment = webHostEnvironment;
 
         }
@@ -67,18 +70,18 @@ namespace Qorrect.Integration.Controllers
             string token = $"Bearer {courseRequest.BearerToken}";
             Cours Course = JsonConvert.DeserializeObject<Cours>(courseRequest.Course);
             string _Description = StripHTML(Course.summary);
-                 
+
             DTOAddEditCourse model = new DTOAddEditCourse()
             {
                 Name = Course.fullname,
                 Code = Course.shortname,
                 CourseSubscriptionId = new Guid(courseRequest.CourseSubscriptionId),
-               
+
                 CourseData = new DTOCourseData
                 {
                     CourseType = CourseType.Elective,
                     CreditHours = 100,
-                    Description= _Description,
+                    Description = _Description,
                     LecturesHours = 60,
                     PracticalHours = 20,
                     TotalHours = 80,
@@ -216,8 +219,7 @@ namespace Qorrect.Integration.Controllers
             #region Get Questions from XML
 
             {
-
-                List<DTOItemFromBedoByIloResponse> BedoQueastionsWithAnswers = new List<DTOItemFromBedoByIloResponse>();
+                Model mediaResponse = new Model();
 
                 var path = Path.Combine(Directory.GetCurrentDirectory(), "DataSource", courseRequest.XMLFile.FileName);
 
@@ -239,7 +241,10 @@ namespace Qorrect.Integration.Controllers
                         string qName = quiz.Element("name").Element("text").Value;
                         string qText = quiz.Element("questiontext").Element("text").Value;
 
+                        string removeImg = Regex.Replace(qText, @"<img\s[^>]*>(?:\s*?</img>)?", "", RegexOptions.IgnoreCase);
 
+
+                        string _qText = "";
                         #region Convert Image File to Base64 Encoded string
 
                         fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
@@ -249,6 +254,27 @@ namespace Qorrect.Integration.Controllers
                         {
                             string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
                             await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+
+                            string imageFile = uploadedPath + fileName;
+
+                            #region callMediaAPI
+
+
+
+                            var Mediaclient = new RestClient($"{MediaBaseUrl}/media/items/upload");
+                            Mediaclient.Timeout = -1;
+                            var Mediarequest = new RestRequest(Method.POST);
+                            Mediarequest.AddParameter("isGenerateMediaId", true, ParameterType.QueryString);
+                            Mediarequest.AddHeader("Authorization", token);
+                            Mediarequest.AddFile("files", imageFile);
+                            IRestResponse Mediaresponse = Mediaclient.Execute(Mediarequest);
+                            mediaResponse = JsonConvert.DeserializeObject<MediaResponse>(Mediaresponse.Content).model;
+
+                            #endregion
+
+                            string newFilename = mediaResponse.uploadResponse.FirstOrDefault().newFilename;
+                            _qText = removeImg + "<figure class=\"image\"><img src = \"{mediaPreFix}" + newFilename + "{mediaPostFix}\"/></figure> ";
+
                         }
 
                         #endregion
@@ -266,29 +292,15 @@ namespace Qorrect.Integration.Controllers
                             });
                         }
 
-
                         Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
                         var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
                         mcqclient.Timeout = -1;
                         var mcqrequest = new RestRequest(Method.POST);
                         mcqrequest.AddHeader("Authorization", token);
                         mcqrequest.AddHeader("Content-Type", "application/json");
-                        #region callMediaAPI
-                        //call MediaAPI
-                        var Mediaclient = new RestClient("http://localhost:5003/media/items/upload?isGenerateMediaId=true&=");
-                        Mediaclient.Timeout = -1;
-                        var Mediarequest = new RestRequest(Method.POST);
-                        Mediarequest.AddHeader("Authorization", "Bearer E04C32E70564AF4DC337972CAF914B776D21B90931C9ACB0AF880CBF13119F0C");
-                        Mediarequest.AddFile("files", "/C:/Users/MHS/Downloads/screenshot reunion -www.azhar.eg-2020.09.07-13_56_02.png");
-                        IRestResponse Mediaresponse = Mediaclient.Execute(Mediarequest);
-                        Console.WriteLine(Mediaresponse.Content);//Please Only Take newFilename Parameter from Mediaresponse.Content
-                        //And Set It to next  rreternFromMediaAPI   Next Line 
-                        #endregion
-                        string rreternFromMediaAPI = "20210907231813553_68cfeef6.JPG";
-                        string _qText= qText+"< figure class=\"image\"><img src = \"{mediaPreFix}" + rreternFromMediaAPI + "\"{mediaPostFix}\" > ";
-                        
 
-                         var MCQbody = new DTOAddQuestion
+
+                        var MCQbody = new DTOAddQuestion
                         {
                             CourseSubscriptionId = CourseSubscriptionId,
                             Version = new DTOVersion
@@ -321,6 +333,7 @@ namespace Qorrect.Integration.Controllers
                                                 }
                                             }
                             },
+                            MediaId = mediaResponse.mediaId,
                             TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
                         };
@@ -328,7 +341,7 @@ namespace Qorrect.Integration.Controllers
                         IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
 
 
-                      
+
 
                     }
 

@@ -17,6 +17,7 @@ namespace Qorrect.Integration.Models
     {
         public List<Cours> courses { get; set; }
     }
+
     public class ModelUnit
     {
         public int id { get; set; }
@@ -24,10 +25,38 @@ namespace Qorrect.Integration.Models
         public bool visible { get; set; }
         public List<modellesson> modules { get; set; }//lessons
     }
+
     public class modellesson
     {
         public int id { get; set; }
         public string name { get; set; }
         public bool visible { get; set; }
     }
+
+    public class UploadResponse
+    {
+        public int fileUploadStatus { get; set; }
+        public string filename { get; set; }
+        public object messages { get; set; }
+        public string newFilename { get; set; }
+    }
+
+    public class Model
+    {
+        public string mediaId { get; set; }
+        public List<UploadResponse> uploadResponse { get; set; }
+    }
+
+    public class MediaResponse
+    {
+        public Model model { get; set; }
+        public List<object> messages { get; set; }
+        public bool isValid { get; set; }
+        public int subTotalCount { get; set; }
+        public object status { get; set; }
+    }
+
+    // Root myDeserializedClass = JsonConvert.DeserializeObject<MediaResponse>(myJsonResponse); 
+
+
 }
