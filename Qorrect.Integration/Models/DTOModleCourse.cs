@@ -9,6 +9,7 @@ namespace Qorrect.Integration.Models
         public string shortname { get; set; }
         public string id { get; set; }
         public string idnumber { get; set; }
+        public string summary { get; set; }
     }
 
 

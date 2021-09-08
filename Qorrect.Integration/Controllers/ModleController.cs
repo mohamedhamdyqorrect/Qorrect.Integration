@@ -10,6 +10,7 @@ using System.IO;
 using Microsoft.AspNetCore.Hosting;
 using System.Xml.Linq;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Qorrect.Integration.Controllers
 {
@@ -65,16 +66,19 @@ namespace Qorrect.Integration.Controllers
         {
             string token = $"Bearer {courseRequest.BearerToken}";
             Cours Course = JsonConvert.DeserializeObject<Cours>(courseRequest.Course);
+            string _Description = StripHTML(Course.summary);
+                 
             DTOAddEditCourse model = new DTOAddEditCourse()
             {
                 Name = Course.fullname,
                 Code = Course.shortname,
                 CourseSubscriptionId = new Guid(courseRequest.CourseSubscriptionId),
+               
                 CourseData = new DTOCourseData
                 {
                     CourseType = CourseType.Elective,
                     CreditHours = 100,
-                    Description = "No Description",
+                    Description= _Description,
                     LecturesHours = 60,
                     PracticalHours = 20,
                     TotalHours = 80,
@@ -269,15 +273,29 @@ namespace Qorrect.Integration.Controllers
                         var mcqrequest = new RestRequest(Method.POST);
                         mcqrequest.AddHeader("Authorization", token);
                         mcqrequest.AddHeader("Content-Type", "application/json");
+                        #region callMediaAPI
+                        //call MediaAPI
+                        var Mediaclient = new RestClient("http://localhost:5003/media/items/upload?isGenerateMediaId=true&=");
+                        Mediaclient.Timeout = -1;
+                        var Mediarequest = new RestRequest(Method.POST);
+                        Mediarequest.AddHeader("Authorization", "Bearer E04C32E70564AF4DC337972CAF914B776D21B90931C9ACB0AF880CBF13119F0C");
+                        Mediarequest.AddFile("files", "/C:/Users/MHS/Downloads/screenshot reunion -www.azhar.eg-2020.09.07-13_56_02.png");
+                        IRestResponse Mediaresponse = Mediaclient.Execute(Mediarequest);
+                        Console.WriteLine(Mediaresponse.Content);//Please Only Take newFilename Parameter from Mediaresponse.Content
+                        //And Set It to next  rreternFromMediaAPI   Next Line 
+                        #endregion
+                        string rreternFromMediaAPI = "20210907231813553_68cfeef6.JPG";
+                        string _qText= qText+"< figure class=\"image\"><img src = \"{mediaPreFix}" + rreternFromMediaAPI + "\"{mediaPostFix}\" > ";
+                        
 
-                        var MCQbody = new DTOAddQuestion
+                         var MCQbody = new DTOAddQuestion
                         {
                             CourseSubscriptionId = CourseSubscriptionId,
                             Version = new DTOVersion
                             {
                                 Stem = new DTOStem
                                 {
-                                    Text = qText,
+                                    Text = _qText,
                                     PlainText = qName,
                                     Comment = "no",
                                     Difficulty = 0,
@@ -309,6 +327,9 @@ namespace Qorrect.Integration.Controllers
                         mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
                         IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
 
+
+                      
+
                     }
 
 
@@ -318,6 +339,11 @@ namespace Qorrect.Integration.Controllers
 
             #endregion
             return Ok();
+        }
+
+        public string StripHTML(string inputHTML)
+        {
+            return Regex.Replace(inputHTML, @"<[^>]+>|&nbsp;|", "").Trim();//&ndash;
         }
 
         [HttpPost]
