@@ -244,7 +244,7 @@ namespace Qorrect.Integration.Controllers
                         string removeImg = Regex.Replace(qText, @"<img\s[^>]*>(?:\s*?</img>)?", "", RegexOptions.IgnoreCase);
 
 
-                        string _qText = "";
+                        string _qText = removeImg;
                         #region Convert Image File to Base64 Encoded string
 
                         fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
@@ -273,7 +273,7 @@ namespace Qorrect.Integration.Controllers
                             #endregion
 
                             string newFilename = mediaResponse.uploadResponse.FirstOrDefault().newFilename;
-                            _qText = removeImg + "<figure class=\"image\"><img src = \"{mediaPreFix}" + newFilename + "{mediaPostFix}\"/></figure> ";
+                            _qText +=  "<figure class=\"image\"><img src = \"{mediaPreFix}" + newFilename + "{mediaPostFix}\"/></figure> ";
 
                         }
 
