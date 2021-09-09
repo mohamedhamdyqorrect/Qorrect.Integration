@@ -186,7 +186,8 @@ namespace Qorrect.Integration.Controllers
 
                     #endregion
 
-
+                    List<int> ListOfBedoIlosInsertedtoQorrect = new List<int>();
+                    List<int> ListOfBedoItemsInsertedtoQorrect = new List<int>();
                     foreach (var bedoCourseLevelitem in bedoCourseLevels)
                     {
 
@@ -221,6 +222,7 @@ namespace Qorrect.Integration.Controllers
 
                         {
                             List<Guid> ListOfIlOsInserted = new List<Guid>();
+
 
                             foreach (var node in bedoCourseLevelitem.Lessons)
                             {
@@ -298,12 +300,18 @@ namespace Qorrect.Integration.Controllers
                                     #region Get Questions from bedo by Ilo
 
                                     {
+
                                         foreach (var bedoIlo in bedoIlos)
                                         {
-
+                                            if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
+                                            ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
                                             BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
+
+
                                             foreach (var question in BedoQueastionsWithAnswers.Where(x => x.QuestionTypeID == 1))
                                             {
+                                                if (ListOfBedoItemsInsertedtoQorrect.Contains(question.Id)) { continue; }
+                                                ListOfBedoItemsInsertedtoQorrect.Add(question.Id);
                                                 List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
                                                 foreach (var answer in question.Answers)
                                                 {
