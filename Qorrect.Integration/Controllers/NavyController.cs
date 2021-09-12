@@ -46,6 +46,35 @@ namespace Qorrect.Integration.Controllers
         {
             string token = $"Bearer {courseRequest.BearerToken}";
 
+            string TagSearchID = "";
+
+            #region Question Tags
+
+            {
+                var client = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromBedo");
+                client.Timeout = -1;
+                var request = new RestRequest(Method.GET);
+                request.AddHeader("Connection", "keep-alive");
+                request.AddHeader("sec-ch-ua", "\"Google Chrome\";v=\"93\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"93\"");
+                request.AddHeader("Accept", "application/json, text/plain, */*");
+                request.AddHeader("Authorization", token);
+                request.AddHeader("Accept-Language", "en-US");
+                request.AddHeader("sec-ch-ua-mobile", "?0");
+                client.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36";
+                request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+                request.AddHeader("Origin", "http://localhost:4200");
+                request.AddHeader("Sec-Fetch-Site", "same-site");
+                request.AddHeader("Sec-Fetch-Mode", "cors");
+                request.AddHeader("Sec-Fetch-Dest", "empty");
+                request.AddHeader("Referer", "http://localhost:4200/");
+                IRestResponse response = client.Execute(request);
+                TagSearchID = JsonConvert.DeserializeObject<DTOTags>(response.Content).id;
+            }
+
+            #endregion
+
+
+
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
             List<DTOCognitiveLevelResponse> cognitiveLevelResponses = new List<DTOCognitiveLevelResponse>();
 
@@ -235,7 +264,8 @@ namespace Qorrect.Integration.Controllers
                                     bedoIlos = await courseDataAccessLayer.GetLevelIlo(node.Id);
                                     foreach (var bedoIlo in bedoIlos)
                                     {
-
+                                        if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
+                                        ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
                                         {
                                             var clientILO = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
                                             clientILO.Timeout = -1;
@@ -296,15 +326,14 @@ namespace Qorrect.Integration.Controllers
                                         }
 
                                     }
-
+                                    ListOfIlOsInserted.Clear();
                                     #region Get Questions from bedo by Ilo
 
                                     {
 
                                         foreach (var bedoIlo in bedoIlos)
                                         {
-                                            if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
-                                            ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
+
                                             BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
 
 
@@ -351,7 +380,7 @@ namespace Qorrect.Integration.Controllers
                                                             Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = new List<Guid?>(),
+                                                        Tags = new List<Guid?>() {Guid.Parse(TagSearchID.ToString()) },
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -361,7 +390,7 @@ namespace Qorrect.Integration.Controllers
                                                     }
                                                 }
                                                     },
-                                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+                                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
                                                 };
                                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
@@ -409,7 +438,7 @@ namespace Qorrect.Integration.Controllers
                                                             //  Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = new List<Guid?>(),
+                                                        Tags = new List<Guid?>() { Guid.Parse("b35b3fe7-d96f-47f8-c36f-08d976214999") },
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping

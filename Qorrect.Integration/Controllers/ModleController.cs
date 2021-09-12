@@ -68,6 +68,35 @@ namespace Qorrect.Integration.Controllers
         public async Task<IActionResult> ImportAllFromModle([FromForm] DTOAddModleCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
+
+            string TagSearchID = "";
+
+            #region Question Tags
+
+            {
+                var tagClient = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromBedo");
+                tagClient.Timeout = -1;
+                var tagRequest = new RestRequest(Method.GET);
+                tagRequest.AddHeader("Connection", "keep-alive");
+                tagRequest.AddHeader("sec-ch-ua", "\"Google Chrome\";v=\"93\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"93\"");
+                tagRequest.AddHeader("Accept", "application/json, text/plain, */*");
+                tagRequest.AddHeader("Authorization", token);
+                tagRequest.AddHeader("Accept-Language", "en-US");
+                tagRequest.AddHeader("sec-ch-ua-mobile", "?0");
+                tagClient.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36";
+                tagRequest.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+                tagRequest.AddHeader("Origin", "http://localhost:4200");
+                tagRequest.AddHeader("Sec-Fetch-Site", "same-site");
+                tagRequest.AddHeader("Sec-Fetch-Mode", "cors");
+                tagRequest.AddHeader("Sec-Fetch-Dest", "empty");
+                tagRequest.AddHeader("Referer", "http://localhost:4200/");
+                IRestResponse tagResponse = tagClient.Execute(tagRequest);
+                TagSearchID = JsonConvert.DeserializeObject<DTOTags>(tagResponse.Content).id;
+            }
+
+            #endregion
+
+
             Cours Course = JsonConvert.DeserializeObject<Cours>(courseRequest.Course);
             string _Description = StripHTML(Course.summary);
 
@@ -237,93 +266,91 @@ namespace Qorrect.Integration.Controllers
                     {
                         string qFile = ""; string fileName = "";
                         string qType = quiz.Attribute("type").Value;
-                        if (qType != "multichoice") { continue; }
-                        string qName = quiz.Element("name").Element("text").Value;
-                        string qText = quiz.Element("questiontext").Element("text").Value;
-
-                        string removeImg = Regex.Replace(qText, @"<img\s[^>]*>(?:\s*?</img>)?", "", RegexOptions.IgnoreCase);
-
-
-                        string _qText = removeImg;
-                        #region Convert Image File to Base64 Encoded string
-
-                        fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
-                        qFile = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Value;
-
-                        if (!string.IsNullOrWhiteSpace(qFile))
+                        if (qType == "multichoice" || qType == "essay" || qType == "truefalse")
                         {
-                            string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
-                            await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+                            string qName = quiz.Element("name").Element("text").Value;
+                            string qText = quiz.Element("questiontext").Element("text").Value;
 
-                            string imageFile = uploadedPath + fileName;
-
-                            #region callMediaAPI
+                            string removeImg = Regex.Replace(qText, @"<img\s[^>]*>(?:\s*?</img>)?", "", RegexOptions.IgnoreCase);
 
 
+                            string _qText = removeImg;
+                            #region Convert Image File to Base64 Encoded string
 
-                            var Mediaclient = new RestClient($"{MediaBaseUrl}/media/items/upload");
-                            Mediaclient.Timeout = -1;
-                            var Mediarequest = new RestRequest(Method.POST);
-                            Mediarequest.AddParameter("isGenerateMediaId", true, ParameterType.QueryString);
-                            Mediarequest.AddHeader("Authorization", token);
-                            Mediarequest.AddFile("files", imageFile);
-                            IRestResponse Mediaresponse = Mediaclient.Execute(Mediarequest);
-                            mediaResponse = JsonConvert.DeserializeObject<MediaResponse>(Mediaresponse.Content).model;
+                            fileName = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Attribute("name").Value;
+                            qFile = quiz.Element("questiontext").Element("file") is null ? "" : quiz.Element("questiontext").Element("file").Value;
 
+                            if (!string.IsNullOrWhiteSpace(qFile))
+                            {
+                                string uploadedPath = Path.Combine(this._webHostEnvironment.ContentRootPath, "Upload/");
+                                await System.IO.File.WriteAllBytesAsync(uploadedPath + fileName, Convert.FromBase64String(qFile));
+
+                                string imageFile = uploadedPath + fileName;
+
+                                #region callMediaAPI
+
+
+
+                                var Mediaclient = new RestClient($"{MediaBaseUrl}/media/items/upload");
+                                Mediaclient.Timeout = -1;
+                                var Mediarequest = new RestRequest(Method.POST);
+                                Mediarequest.AddParameter("isGenerateMediaId", true, ParameterType.QueryString);
+                                Mediarequest.AddHeader("Authorization", token);
+                                Mediarequest.AddFile("files", imageFile);
+                                IRestResponse Mediaresponse = Mediaclient.Execute(Mediarequest);
+                                mediaResponse = JsonConvert.DeserializeObject<MediaResponse>(Mediaresponse.Content).model;
+
+                                #endregion
+
+                                string newFilename = mediaResponse.uploadResponse.FirstOrDefault().newFilename;
+                                _qText += "<figure class=\"image\"><img src = \"{mediaPreFix}" + newFilename + "{mediaPostFix}\"/></figure> ";
+
+                            }
+                            DTOAddQuestion MCQbody = new DTOAddQuestion();
+                            DTOAddEssayQuestion Essaybody = new DTOAddEssayQuestion();
                             #endregion
+                            string apiMethod = "mcq";
+                            Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
 
-                            string newFilename = mediaResponse.uploadResponse.FirstOrDefault().newFilename;
-                            _qText +=  "<figure class=\"image\"><img src = \"{mediaPreFix}" + newFilename + "{mediaPostFix}\"/></figure> ";
-
-                        }
-
-                        #endregion
-
-                        List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
-                        IEnumerable<XElement> answers = quiz.Elements("answer");
-                        foreach (var answer in answers)
-                        {
-                            bool IsTrue = answer.Attribute("fraction").Value == "100";
-                            dTOAnswers.Add(new DTOAnswer
+                            if (qType == "multichoice" || qType == "truefalse")
                             {
-                                PlainText = answer.Element("text").Value,
-                                Text = answer.Element("text").Value,
-                                IsCorrect = IsTrue
-                            });
-                        }
-
-                        Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
-                        var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
-                        mcqclient.Timeout = -1;
-                        var mcqrequest = new RestRequest(Method.POST);
-                        mcqrequest.AddHeader("Authorization", token);
-                        mcqrequest.AddHeader("Content-Type", "application/json");
-
-
-                        var MCQbody = new DTOAddQuestion
-                        {
-                            CourseSubscriptionId = CourseSubscriptionId,
-                            Version = new DTOVersion
-                            {
-                                Stem = new DTOStem
+                                List<DTOAnswer> dTOAnswers = new List<DTOAnswer>();
+                                IEnumerable<XElement> answers = quiz.Elements("answer");
+                                foreach (var answer in answers)
                                 {
-                                    Text = _qText,
-                                    PlainText = qName,
-                                    Comment = "no",
-                                    Difficulty = 0,
-                                    Settings = new DTOSettings
+                                    bool IsTrue = answer.Attribute("fraction").Value == "100";
+                                    dTOAnswers.Add(new DTOAnswer
                                     {
-                                        IsShuffleAnswers = true,
-                                        IsAllowForTrialExams = true,
-                                        Difficulty = 1,
-                                        ExpectedTime = 1,
-                                        IsAllowedForComputerBasedOnly = true
-                                    },
-                                    Answers = dTOAnswers
-                                },
-                                ItemClassification = 1,
-                                Tags = new List<Guid?>(),
-                                ItemMappings = new List<DTOItemMapping>()
+                                        PlainText = answer.Element("text").Value,
+                                        Text = answer.Element("text").Value,
+                                        IsCorrect = IsTrue
+                                    });
+                                }
+
+                                MCQbody = new DTOAddQuestion
+                                {
+                                    CourseSubscriptionId = CourseSubscriptionId,
+                                    Version = new DTOVersion
+                                    {
+                                        Stem = new DTOStem
+                                        {
+                                            Text = _qText,
+                                            PlainText = qName,
+                                            Comment = "no",
+                                            Difficulty = 0,
+                                            Settings = new DTOSettings
+                                            {
+                                                IsShuffleAnswers = true,
+                                                IsAllowForTrialExams = true,
+                                                Difficulty = 1,
+                                                ExpectedTime = 1,
+                                                IsAllowedForComputerBasedOnly = true
+                                            },
+                                            Answers = dTOAnswers
+                                        },
+                                        ItemClassification = 1,
+                                        Tags = new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
+                                        ItemMappings = new List<DTOItemMapping>()
                                             {
                                                 new DTOItemMapping
                                                 {
@@ -332,17 +359,82 @@ namespace Qorrect.Integration.Controllers
                                                    LevelId =  ParentId
                                                 }
                                             }
-                            },
-                            MediaId = mediaResponse.mediaId,
-                            TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
+                                    },
+                                    MediaId = mediaResponse.mediaId,
+                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
-                        };
-                        mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
-                        IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+                                };
+                            }
+                            if (qType == "essay")
+                            {
+                                apiMethod = "essay";
+                                Essaybody = new DTOAddEssayQuestion
+                                {
+                                    CourseSubscriptionId = CourseSubscriptionId,
+                                    Version = new DTOEssayVersion
+                                    {
+
+                                        Stem = new DTOEssayStem
+                                        {
+                                            Direction = "FromBedo",
+                                            Text = _qText,
+                                            PlainText = _qText,
+                                            Answer = new DTOEssayAnswer
+                                            {
+                                                modelAnswer = "From Bedo",
+                                                modelAnswerPlainText = "From Bedo"
+
+                                            },
+                                            Comment = "no",
+                                            Difficulty = 0,
+                                            Settings = new DTOSettings
+                                            {
+                                                IsShuffleAnswers = true,
+                                                IsAllowForTrialExams = true,
+                                                Difficulty = 1,
+                                                ExpectedTime = 1,
+                                                IsAllowedForComputerBasedOnly = true
+                                            },
+                                            //  Answers = dTOAnswers
+                                        },
+                                        ItemClassification = 1,
+                                        Tags = new List<Guid?>(),
+                                        ItemMappings = new List<DTOItemMapping>
+                                                {
+                                                    new DTOItemMapping
+                                                    {
+                                                       // IloId = Guid.Parse(resultILO.Id.ToString()),
+                                                        LevelId = ParentId
+                                                    }
+                                                }
+                                    },
+                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+
+                                };
+                            }
+
+                            if (qType == "truefalse")
+                            {
+                                apiMethod = "TF";
+                            }
+                            var mcqclient = new RestClient($"{QorrectBaseUrl}/item/" + apiMethod);
+                            mcqclient.Timeout = -1;
+                            var mcqrequest = new RestRequest(Method.POST);
+                            mcqrequest.AddHeader("Authorization", token);
+                            mcqrequest.AddHeader("Content-Type", "application/json");
+                            if (qType == "multichoice" || qType == "truefalse")
+                            {
+                                mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
+                            }
+                            if (qType == "essay")
+                            {
+                                mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(Essaybody), ParameterType.RequestBody);
+                            }
 
 
 
-
+                            IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+                        }
                     }
 
 

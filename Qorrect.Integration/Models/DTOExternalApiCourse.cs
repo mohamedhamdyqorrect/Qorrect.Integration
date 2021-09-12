@@ -292,5 +292,11 @@ namespace Qorrect.Integration.Models
         public bool TrueFalse { get; set; }
 
     }
+
+    public class DTOTags
+    {
+        public string id { get; set; }
+        public string name { get; set; }
+    }
 }
 

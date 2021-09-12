@@ -56,7 +56,5 @@ namespace Qorrect.Integration.Models
         public object status { get; set; }
     }
 
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<MediaResponse>(myJsonResponse); 
-
 
 }
