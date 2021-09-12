@@ -399,7 +399,7 @@ namespace Qorrect.Integration.Controllers
                                             //  Answers = dTOAnswers
                                         },
                                         ItemClassification = 1,
-                                        Tags = new List<Guid?>(),
+                                        Tags = new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping

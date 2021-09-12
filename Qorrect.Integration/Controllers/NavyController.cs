@@ -440,14 +440,9 @@ namespace Qorrect.Integration.Controllers
                                                         },
                                                         ItemClassification = 1,
                                                         Tags = TagSearchID is null ? new List<Guid?>() { } : new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
-                                                        ItemMappings = new List<DTOItemMapping>
-                                                {
-                                                    new DTOItemMapping
-                                                    {
-                                                        IloId = Guid.Parse(resultILO.Id.ToString()),
-                                                        LevelId =  resultleaf.Id
-                                                    }
-                                                }
+                                                        ItemMappings = new List<DTOItemMapping>() {
+                                                                  new DTOItemMapping{IloId = Guid.Parse(resultILO.Id.ToString()) , LevelId = resultleaf.Id }
+                                                        }
                                                     },
                                                     TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
 
