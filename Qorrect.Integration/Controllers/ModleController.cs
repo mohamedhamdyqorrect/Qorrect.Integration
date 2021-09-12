@@ -91,7 +91,8 @@ namespace Qorrect.Integration.Controllers
                 tagRequest.AddHeader("Sec-Fetch-Dest", "empty");
                 tagRequest.AddHeader("Referer", "http://localhost:4200/");
                 IRestResponse tagResponse = tagClient.Execute(tagRequest);
-                TagSearchID = JsonConvert.DeserializeObject<DTOTags>(tagResponse.Content).id;
+                List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content);
+                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content).FirstOrDefault().id : null;
             }
 
             #endregion

@@ -68,7 +68,8 @@ namespace Qorrect.Integration.Controllers
                 request.AddHeader("Sec-Fetch-Dest", "empty");
                 request.AddHeader("Referer", "http://localhost:4200/");
                 IRestResponse response = client.Execute(request);
-                TagSearchID = JsonConvert.DeserializeObject<DTOTags>(response.Content).id;
+                List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(response.Content);
+                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTags>>(response.Content).FirstOrDefault().id : null;
             }
 
             #endregion
@@ -380,7 +381,7 @@ namespace Qorrect.Integration.Controllers
                                                             Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = new List<Guid?>() {Guid.Parse(TagSearchID.ToString()) },
+                                                        Tags = TagSearchID is null ? new List<Guid?>() { } : new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -438,7 +439,7 @@ namespace Qorrect.Integration.Controllers
                                                             //  Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = new List<Guid?>() { Guid.Parse("b35b3fe7-d96f-47f8-c36f-08d976214999") },
+                                                        Tags = TagSearchID is null ? new List<Guid?>() { } : new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
