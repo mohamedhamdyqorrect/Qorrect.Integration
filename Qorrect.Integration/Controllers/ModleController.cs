@@ -69,6 +69,8 @@ namespace Qorrect.Integration.Controllers
         {
             string token = $"Bearer {courseRequest.BearerToken}";
 
+            List<DTOTagAddQuestion> questiontags = new List<DTOTagAddQuestion>();
+
             string TagSearchID = "";
 
             #region Question Tags
@@ -92,7 +94,7 @@ namespace Qorrect.Integration.Controllers
                 tagRequest.AddHeader("Referer", "http://localhost:4200/");
                 IRestResponse tagResponse = tagClient.Execute(tagRequest);
                 List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content);
-                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content).FirstOrDefault().id : null;
+                questiontags = tags.Any() ? new List<DTOTagAddQuestion> { new DTOTagAddQuestion { name = JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content).FirstOrDefault().name } } : null;
             }
 
             #endregion
@@ -350,7 +352,7 @@ namespace Qorrect.Integration.Controllers
                                             Answers = dTOAnswers
                                         },
                                         ItemClassification = 1,
-                                        Tags = new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
+                                        Tags = questiontags,
                                         ItemMappings = new List<DTOItemMapping>()
                                             {
                                                 new DTOItemMapping
@@ -399,7 +401,7 @@ namespace Qorrect.Integration.Controllers
                                             //  Answers = dTOAnswers
                                         },
                                         ItemClassification = 1,
-                                        Tags = new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
+                                        Tags = questiontags,
                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -520,7 +522,7 @@ namespace Qorrect.Integration.Controllers
                             Answers = dTOAnswers
                         },
                         ItemClassification = 1,
-                        Tags = new List<Guid?>(),
+                        //Tags = questiontags,
                         ItemMappings = new List<DTOItemMapping>()
                     },
                     TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it

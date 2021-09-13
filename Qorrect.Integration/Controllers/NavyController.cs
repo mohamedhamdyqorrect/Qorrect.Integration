@@ -45,9 +45,8 @@ namespace Qorrect.Integration.Controllers
         public async Task<IActionResult> ImportAllFromBedo([FromBody] DTOAddCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
-
-            string TagSearchID = "";
-
+            List<DTOTagAddQuestion> questiontags = new List<DTOTagAddQuestion>();
+          
             #region Question Tags
 
             {
@@ -69,7 +68,7 @@ namespace Qorrect.Integration.Controllers
                 request.AddHeader("Referer", "http://localhost:4200/");
                 IRestResponse response = client.Execute(request);
                 List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(response.Content);
-                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTags>>(response.Content).FirstOrDefault().id : null;
+                questiontags = tags.Any() ? new List<DTOTagAddQuestion> { new DTOTagAddQuestion { name = JsonConvert.DeserializeObject<List<DTOTags>>(response.Content).FirstOrDefault().name } } : null;
             }
 
             #endregion
@@ -381,7 +380,7 @@ namespace Qorrect.Integration.Controllers
                                                             Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = TagSearchID is null ? new List<Guid?>() { } : new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
+                                                        Tags = questiontags,
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -439,7 +438,7 @@ namespace Qorrect.Integration.Controllers
                                                             //  Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = TagSearchID is null ? new List<Guid?>() { } : new List<Guid?>() { Guid.Parse(TagSearchID.ToString()) },
+                                                        Tags = questiontags,
                                                         ItemMappings = new List<DTOItemMapping>() {
                                                                   new DTOItemMapping{IloId = Guid.Parse(resultILO.Id.ToString()) , LevelId = resultleaf.Id }
                                                         }

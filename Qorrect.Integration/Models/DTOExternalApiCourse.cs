@@ -91,15 +91,21 @@ namespace Qorrect.Integration.Models
     {
         public DTOStem Stem { get; set; }
         public int ItemClassification { get; set; }
-        public List<Guid?> Tags { get; set; }
+        public List<DTOTagAddQuestion> Tags { get; set; }
         public List<DTOItemMapping> ItemMappings { get; set; }
     }
+
+    public class DTOTagAddQuestion
+    {
+        public string name { get; set; }
+    }
+
     public class DTOEssayVersion
     {
         public DTOEssayStem Stem { get; set; }
         public int ItemClassification { get; set; }
 
-        public List<Guid?> Tags { get; set; }
+        public List<DTOTagAddQuestion> Tags { get; set; }
         public List<DTOItemMapping> ItemMappings { get; set; }
     }
 
