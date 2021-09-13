@@ -63,36 +63,18 @@ namespace Qorrect.Integration.Controllers
             return Ok(JsonConvert.DeserializeObject<DTOModleCourse>(response.Content));
         }
 
-        [HttpGet]
-        [Route("QorrectModules/{id}")]
-        public async Task<IActionResult> QorrectModules([FromRoute] string id)
-        {
-            string token = $"Bearer {id}";
-            var client = new RestClient($"{QorrectBaseUrl}/coursesubscription?page=1&pageSize=30&isArchived=false");
-            client.Timeout = -1;
-            var request = new RestRequest(Method.GET);
-            request.AddHeader("Accept", "application/json, text/plain, */*");
-            request.AddHeader("Authorization", token);
-            request.AddHeader("Accept-Language", "en-US");
-            IRestResponse response = await client.ExecuteAsync(request);
-            return Ok(JsonConvert.DeserializeObject<DTOQorrectModulesResponse>(response.Content));
-        }
-
-
         [HttpPost]
         [Route("ImportAllFromModle")]
         public async Task<IActionResult> ImportAllFromModle([FromForm] DTOAddModleCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
 
-            List<DTOTagAddQuestion> questiontags = new List<DTOTagAddQuestion>();
-
             string TagSearchID = "";
 
             #region Question Tags
 
             {
-                var tagClient = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromBedo");
+                var tagClient = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromMoodle");
                 tagClient.Timeout = -1;
                 var tagRequest = new RestRequest(Method.GET);
                 tagRequest.AddHeader("Connection", "keep-alive");
@@ -109,10 +91,10 @@ namespace Qorrect.Integration.Controllers
                 tagRequest.AddHeader("Sec-Fetch-Dest", "empty");
                 tagRequest.AddHeader("Referer", "http://localhost:4200/");
                 IRestResponse tagResponse = tagClient.Execute(tagRequest);
-                List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content);
-                questiontags = tags.Any() ? new List<DTOTagAddQuestion> { new DTOTagAddQuestion { name = JsonConvert.DeserializeObject<List<DTOTags>>(tagResponse.Content).FirstOrDefault().name } } : null;
+                List<DTOTag> tags = JsonConvert.DeserializeObject<List<DTOTag>>(tagResponse.Content);
+                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTag>>(tagResponse.Content).FirstOrDefault().id : null;
             }
-
+            List<DTOTag> _Tags = new List<DTOTag>() { new DTOTag { id = TagSearchID.ToString(), name = "FromMoodle" } };
             #endregion
 
 
@@ -133,7 +115,8 @@ namespace Qorrect.Integration.Controllers
                     LecturesHours = 60,
                     PracticalHours = 20,
                     TotalHours = 80,
-                    TotalMarks = 80
+                    TotalMarks = 80,
+                    Tags = _Tags
                 }
             };
 
@@ -285,6 +268,7 @@ namespace Qorrect.Integration.Controllers
                     {
                         string qFile = ""; string fileName = "";
                         string qType = quiz.Attribute("type").Value;
+
                         if (qType == "multichoice" || qType == "essay" || qType == "truefalse")
                         {
                             string qName = quiz.Element("name").Element("text").Value;
@@ -368,7 +352,7 @@ namespace Qorrect.Integration.Controllers
                                             Answers = dTOAnswers
                                         },
                                         ItemClassification = 1,
-                                        Tags = questiontags,
+                                        Tags = _Tags,
                                         ItemMappings = new List<DTOItemMapping>()
                                             {
                                                 new DTOItemMapping
@@ -395,13 +379,13 @@ namespace Qorrect.Integration.Controllers
 
                                         Stem = new DTOEssayStem
                                         {
-                                            Direction = "FromBedo",
+                                            Direction = "FromMoodle",
                                             Text = _qText,
                                             PlainText = _qText,
                                             Answer = new DTOEssayAnswer
                                             {
-                                                modelAnswer = "From Bedo",
-                                                modelAnswerPlainText = "From Bedo"
+                                                modelAnswer = "From Moodle",
+                                                modelAnswerPlainText = "From Moodle"
 
                                             },
                                             Comment = "no",
@@ -417,7 +401,8 @@ namespace Qorrect.Integration.Controllers
                                             //  Answers = dTOAnswers
                                         },
                                         ItemClassification = 1,
-                                        Tags = questiontags,
+                                        Tags = _Tags,
+
                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -427,7 +412,7 @@ namespace Qorrect.Integration.Controllers
                                                     }
                                                 }
                                     },
-                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will chamge it
+                                    TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it
 
                                 };
                             }
@@ -469,6 +454,7 @@ namespace Qorrect.Integration.Controllers
         {
             return Regex.Replace(inputHTML, @"<[^>]+>|&nbsp;|", "").Trim();//&ndash;
         }
+
 
         [HttpPost]
         [Route("LoadQuestionsFromXML")]
@@ -538,7 +524,9 @@ namespace Qorrect.Integration.Controllers
                             Answers = dTOAnswers
                         },
                         ItemClassification = 1,
-                        //Tags = questiontags,
+
+
+                        //Tags = _Tags,
                         ItemMappings = new List<DTOItemMapping>()
                     },
                     TransactionItemId = Guid.Parse("3fa85f64-5717-4562-b3fc-2c963f66afa6") // will change it

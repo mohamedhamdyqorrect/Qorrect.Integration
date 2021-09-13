@@ -40,7 +40,6 @@ namespace Qorrect.Integration.Controllers
             return Ok(bedoCourses);
         }
 
-
         [HttpGet]
         [Route("QorrectModules/{id}")]
         public async Task<IActionResult> QorrectModules([FromRoute] string id)
@@ -56,40 +55,39 @@ namespace Qorrect.Integration.Controllers
             return Ok(JsonConvert.DeserializeObject<DTOQorrectModulesResponse>(response.Content));
         }
 
-
         [HttpPost]
         [Route("ImportAllFromBedo")]
         public async Task<IActionResult> ImportAllFromBedo([FromBody] DTOAddCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
-            List<DTOTagAddQuestion> questiontags = new List<DTOTagAddQuestion>();
+
+            string TagSearchID = "";
 
             #region Question Tags
 
             {
-                var client = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromBedo");
-                client.Timeout = -1;
-                var request = new RestRequest(Method.GET);
-                request.AddHeader("Connection", "keep-alive");
-                request.AddHeader("sec-ch-ua", "\"Google Chrome\";v=\"93\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"93\"");
-                request.AddHeader("Accept", "application/json, text/plain, */*");
-                request.AddHeader("Authorization", token);
-                request.AddHeader("Accept-Language", "en-US");
-                request.AddHeader("sec-ch-ua-mobile", "?0");
-                client.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36";
-                request.AddHeader("sec-ch-ua-platform", "\"Windows\"");
-                request.AddHeader("Origin", "http://localhost:4200");
-                request.AddHeader("Sec-Fetch-Site", "same-site");
-                request.AddHeader("Sec-Fetch-Mode", "cors");
-                request.AddHeader("Sec-Fetch-Dest", "empty");
-                request.AddHeader("Referer", "http://localhost:4200/");
-                IRestResponse response = client.Execute(request);
-                List<DTOTags> tags = JsonConvert.DeserializeObject<List<DTOTags>>(response.Content);
-                questiontags = tags.Any() ? new List<DTOTagAddQuestion> { new DTOTagAddQuestion { name = JsonConvert.DeserializeObject<List<DTOTags>>(response.Content).FirstOrDefault().name } } : null;
+                var tagClient = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromBedo");
+                tagClient.Timeout = -1;
+                var tagRequest = new RestRequest(Method.GET);
+                tagRequest.AddHeader("Connection", "keep-alive");
+                tagRequest.AddHeader("sec-ch-ua", "\"Google Chrome\";v=\"93\", \" Not;A Brand\";v=\"99\", \"Chromium\";v=\"93\"");
+                tagRequest.AddHeader("Accept", "application/json, text/plain, */*");
+                tagRequest.AddHeader("Authorization", token);
+                tagRequest.AddHeader("Accept-Language", "en-US");
+                tagRequest.AddHeader("sec-ch-ua-mobile", "?0");
+                tagClient.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36";
+                tagRequest.AddHeader("sec-ch-ua-platform", "\"Windows\"");
+                tagRequest.AddHeader("Origin", "http://localhost:4200");
+                tagRequest.AddHeader("Sec-Fetch-Site", "same-site");
+                tagRequest.AddHeader("Sec-Fetch-Mode", "cors");
+                tagRequest.AddHeader("Sec-Fetch-Dest", "empty");
+                tagRequest.AddHeader("Referer", "http://localhost:4200/");
+                IRestResponse tagResponse = tagClient.Execute(tagRequest);
+                List<DTOTag> tags = JsonConvert.DeserializeObject<List<DTOTag>>(tagResponse.Content);
+                TagSearchID = tags.Any() ? JsonConvert.DeserializeObject<List<DTOTag>>(tagResponse.Content).FirstOrDefault().id : null;
             }
-
+            List<DTOTag> _Tags = new List<DTOTag>() { new DTOTag { id = TagSearchID.ToString(), name = "FromBedo" } };
             #endregion
-
 
 
             List<DTOAddEditCourse> addedCoursed = new List<DTOAddEditCourse>();
@@ -119,7 +117,8 @@ namespace Qorrect.Integration.Controllers
                         LecturesHours = bedoCourseitem.LectureHours,
                         PracticalHours = bedoCourseitem.PracticalHours,
                         TotalHours = bedoCourseitem.ClassesHours,
-                        TotalMarks = bedoCourseitem.TotalMarks
+                        TotalMarks = bedoCourseitem.TotalMarks,
+                        Tags = _Tags
                     }
                 };
 
@@ -132,9 +131,7 @@ namespace Qorrect.Integration.Controllers
                 request.AddParameter("application/json", JsonConvert.SerializeObject(model), ParameterType.RequestBody);
                 IRestResponse response = client.Execute(request);
                 var item = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
-
                 #region Apply Outline structure to course
-
                 {
                     var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
                     applyOutlineclient.Timeout = -1;
@@ -267,22 +264,22 @@ namespace Qorrect.Integration.Controllers
                         #region Add Leaf Level to course outline
 
                         {
-                            List<Guid> ListOfIlOsInserted = new List<Guid>();
+
 
 
                             foreach (var node in bedoCourseLevelitem.Lessons)
                             {
 
+                                List<Guid> ListOfIlOsInserted = new List<Guid>();
                                 DTOQorrectILORequest resultILO = new DTOQorrectILORequest();
 
                                 #region Get Ilos from Bedo
-
                                 {
                                     bedoIlos = await courseDataAccessLayer.GetLevelIlo(node.Id);
                                     foreach (var bedoIlo in bedoIlos)
                                     {
-                                        if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
-                                        ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
+                                        //if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
+                                        // ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
                                         {
                                             var clientILO = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
                                             clientILO.Timeout = -1;
@@ -304,10 +301,16 @@ namespace Qorrect.Integration.Controllers
                                             {
                                                 return Ok(responseILO.Content);
                                             }
-                                            ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
+                                            // if (!ListOfIlOsInserted.Contains(Guid.Parse(resultILO.Id.ToString())))
+                                            {
+                                                ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
+                                            }
+                                            //ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                                         }
 
                                     }
+
+
 
                                 }
 
@@ -343,7 +346,7 @@ namespace Qorrect.Integration.Controllers
                                         }
 
                                     }
-                                    ListOfIlOsInserted.Clear();
+                                    // ListOfIlOsInserted.Clear();
                                     #region Get Questions from bedo by Ilo
 
                                     {
@@ -353,7 +356,7 @@ namespace Qorrect.Integration.Controllers
 
                                             BedoQueastionsWithAnswers = await courseDataAccessLayer.GetItemsByIlo(bedoIlo.Id);
 
-
+                                            #region MCQ
                                             foreach (var question in BedoQueastionsWithAnswers.Where(x => x.QuestionTypeID == 1))
                                             {
                                                 if (ListOfBedoItemsInsertedtoQorrect.Contains(question.Id)) { continue; }
@@ -397,7 +400,7 @@ namespace Qorrect.Integration.Controllers
                                                             Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = questiontags,
+                                                        Tags = _Tags,
                                                         ItemMappings = new List<DTOItemMapping>
                                                 {
                                                     new DTOItemMapping
@@ -414,7 +417,7 @@ namespace Qorrect.Integration.Controllers
                                                 IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
 
                                             }
-
+                                            #endregion
                                             #region Essay
                                             foreach (var questionEssay in BedoQueastionsWithAnswers.Where(x => x.QuestionTypeID == 4))
                                             {
@@ -455,7 +458,7 @@ namespace Qorrect.Integration.Controllers
                                                             //  Answers = dTOAnswers
                                                         },
                                                         ItemClassification = 1,
-                                                        Tags = questiontags,
+                                                        Tags = _Tags,
                                                         ItemMappings = new List<DTOItemMapping>() {
                                                                   new DTOItemMapping{IloId = Guid.Parse(resultILO.Id.ToString()) , LevelId = resultleaf.Id }
                                                         }
@@ -480,7 +483,7 @@ namespace Qorrect.Integration.Controllers
                                 #endregion
 
                             }
-
+                            //ListOfIlOsInserted.Clear();
                         }
 
                         #endregion
@@ -493,7 +496,7 @@ namespace Qorrect.Integration.Controllers
             #region Invisible Added bedo Cousres
             {
                 string ids = string.Join(", ", courseRequest.Courses.Select(p => p.Id));
-                var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
+                //var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
             }
             #endregion
 

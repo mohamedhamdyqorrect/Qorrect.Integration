@@ -5,7 +5,6 @@ using System.Collections.Generic;
 
 namespace Qorrect.Integration.Models
 {
-
     public class DTOAddCourseRequest
     {
         public string BearerToken { get; set; }
@@ -91,21 +90,15 @@ namespace Qorrect.Integration.Models
     {
         public DTOStem Stem { get; set; }
         public int ItemClassification { get; set; }
-        public List<DTOTagAddQuestion> Tags { get; set; }
+        public List<DTOTag> Tags { get; set; }
         public List<DTOItemMapping> ItemMappings { get; set; }
     }
-
-    public class DTOTagAddQuestion
-    {
-        public string name { get; set; }
-    }
-
     public class DTOEssayVersion
     {
         public DTOEssayStem Stem { get; set; }
         public int ItemClassification { get; set; }
 
-        public List<DTOTagAddQuestion> Tags { get; set; }
+        public List<DTOTag> Tags { get; set; }
         public List<DTOItemMapping> ItemMappings { get; set; }
     }
 
@@ -146,7 +139,7 @@ namespace Qorrect.Integration.Models
         public string Description { get; set; }
         public double? TotalMarks { get; set; }
         public double? TotalHours { get; set; }
-        public List<DTOLevelCourseDataTag> Tags { get; set; }
+        public List<DTOTag> Tags { get; set; }
         public bool IsValidTotalMarks { get { return (TotalMarks == null || TotalMarks >= 0); } }
         public bool IsValidTotalHours { get { return (TotalHours == null || TotalHours >= 0); } }
     }
