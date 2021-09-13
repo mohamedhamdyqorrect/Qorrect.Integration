@@ -40,13 +40,30 @@ namespace Qorrect.Integration.Controllers
             return Ok(bedoCourses);
         }
 
+
+        [HttpGet]
+        [Route("QorrectModules/{id}")]
+        public async Task<IActionResult> QorrectModules([FromRoute] string id)
+        {
+            string token = $"Bearer {id}";
+            var client = new RestClient($"{QorrectBaseUrl}/coursesubscription?page=1&pageSize=30&isArchived=false");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.GET);
+            request.AddHeader("Accept", "application/json, text/plain, */*");
+            request.AddHeader("Authorization", token);
+            request.AddHeader("Accept-Language", "en-US");
+            IRestResponse response = await client.ExecuteAsync(request);
+            return Ok(JsonConvert.DeserializeObject<DTOQorrectModulesResponse>(response.Content));
+        }
+
+
         [HttpPost]
         [Route("ImportAllFromBedo")]
         public async Task<IActionResult> ImportAllFromBedo([FromBody] DTOAddCourseRequest courseRequest)
         {
             string token = $"Bearer {courseRequest.BearerToken}";
             List<DTOTagAddQuestion> questiontags = new List<DTOTagAddQuestion>();
-          
+
             #region Question Tags
 
             {

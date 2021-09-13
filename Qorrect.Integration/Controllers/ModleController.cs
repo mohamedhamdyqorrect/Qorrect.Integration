@@ -63,6 +63,22 @@ namespace Qorrect.Integration.Controllers
             return Ok(JsonConvert.DeserializeObject<DTOModleCourse>(response.Content));
         }
 
+        [HttpGet]
+        [Route("QorrectModules/{id}")]
+        public async Task<IActionResult> QorrectModules([FromRoute] string id)
+        {
+            string token = $"Bearer {id}";
+            var client = new RestClient($"{QorrectBaseUrl}/coursesubscription?page=1&pageSize=30&isArchived=false");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.GET);
+            request.AddHeader("Accept", "application/json, text/plain, */*");
+            request.AddHeader("Authorization", token);
+            request.AddHeader("Accept-Language", "en-US");
+            IRestResponse response = await client.ExecuteAsync(request);
+            return Ok(JsonConvert.DeserializeObject<DTOQorrectModulesResponse>(response.Content));
+        }
+
+
         [HttpPost]
         [Route("ImportAllFromModle")]
         public async Task<IActionResult> ImportAllFromModle([FromForm] DTOAddModleCourseRequest courseRequest)

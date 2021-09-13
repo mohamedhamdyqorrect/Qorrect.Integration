@@ -304,5 +304,43 @@ namespace Qorrect.Integration.Models
         public string id { get; set; }
         public string name { get; set; }
     }
-}
 
+    public class DTOQorrectModulesResponse
+    {
+        public int totalCountWithoutFilter { get; set; }
+        public List<List> list { get; set; }
+    }
+
+    public class List
+    {
+        public string id { get; set; }
+        public string fullName { get; set; }
+        public string code { get; set; }
+        public int subjectCreatorCount { get; set; }
+        public int activatedSubjectCreatorCount { get; set; }
+        public int deactivatedSubjectCreatorCount { get; set; }
+        public int teachersCount { get; set; }
+        public int activatedTeachersCount { get; set; }
+        public int deactivatedTeachersCount { get; set; }
+        public int studentCount { get; set; }
+        public int activatedStudentCount { get; set; }
+        public int deactivatedStudentCount { get; set; }
+        public bool isPublished { get; set; }
+        public int managersCount { get; set; }
+        public int activatedManagersCount { get; set; }
+        public int deactivatedManagersCount { get; set; }
+        public int writersCount { get; set; }
+        public int activatedWritersCount { get; set; }
+        public int deactivatedWritersCount { get; set; }
+        public int reviewersCount { get; set; }
+        public int activatedReviewersCount { get; set; }
+        public int deactivatedReviewersCount { get; set; }
+        public string description { get; set; }
+        public bool isArchiveManagers { get; set; }
+        public bool isArchiveReviewers { get; set; }
+        public bool isArchiveWriters { get; set; }
+        public bool isArchiveTeachers { get; set; }
+        public bool isArchiveStudents { get; set; }
+        public bool isArchiveSubjectCreators { get; set; }
+    }
+}

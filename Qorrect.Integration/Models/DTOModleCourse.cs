@@ -12,6 +12,12 @@ namespace Qorrect.Integration.Models
         public string summary { get; set; }
     }
 
+    public class DTOTag
+    {
+        public string id { get; set; }
+        public string name { get; set; }
+    }
+
 
     public class DTOModleCourse
     {
