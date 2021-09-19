@@ -415,7 +415,12 @@ namespace Qorrect.Integration.Controllers
                                                 };
                                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                                                 IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
-
+                                                if(mcqresponse.Content is null)
+                                                {
+                                                    int ErrorQuestionID = question.Id;
+                                                    string logResponse = JsonConvert.SerializeObject(mcqresponse);
+                                                    return Ok(new { ErrorQuestionID , logResponse });
+                                                }
                                             }
                                             #endregion
                                             #region Essay
@@ -468,7 +473,12 @@ namespace Qorrect.Integration.Controllers
                                                 };
                                                 Essayrequest.AddParameter("application/json", JsonConvert.SerializeObject(Essaybody), ParameterType.RequestBody);
                                                 IRestResponse Essayresponse = Essayclient.Execute(Essayrequest);
+                                                if (Essayresponse.Content is null)
+                                                {
+                                                    int ErrorQuestionID = questionEssay.Id;
+                                                    string logResponse = JsonConvert.SerializeObject(Essayresponse);
 
+                                                }
                                             }
                                             #endregion
 
