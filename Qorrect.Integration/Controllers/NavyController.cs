@@ -102,6 +102,8 @@ namespace Qorrect.Integration.Controllers
 
             foreach (var bedoCourseitem in courseRequest.Courses)
             {
+                int BedoCourseId = bedoCourseitem.Id;
+
                 var bedoCourseLevels = await courseDataAccessLayer.GetCourseLevels(bedoCourseitem.Id);
                 congnitiveLevels = await courseDataAccessLayer.GetCongitive(bedoCourseitem.Id);
                 DTOAddEditCourse model = new DTOAddEditCourse()
@@ -301,11 +303,9 @@ namespace Qorrect.Integration.Controllers
                                             {
                                                 return Ok(responseILO.Content);
                                             }
-                                            // if (!ListOfIlOsInserted.Contains(Guid.Parse(resultILO.Id.ToString())))
                                             {
                                                 ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                                             }
-                                            //ListOfIlOsInserted.Add(Guid.Parse(resultILO.Id.ToString()));
                                         }
 
                                     }
@@ -346,7 +346,7 @@ namespace Qorrect.Integration.Controllers
                                         }
 
                                     }
-                                    // ListOfIlOsInserted.Clear();
+
                                     #region Get Questions from bedo by Ilo
 
                                     {
@@ -415,12 +415,28 @@ namespace Qorrect.Integration.Controllers
                                                 };
                                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(body), ParameterType.RequestBody);
                                                 IRestResponse mcqresponse = mcqclient.Execute(mcqrequest);
-                                                if(mcqresponse.Content is null)
+
+                                                #region Log in Database
+
                                                 {
-                                                    int ErrorQuestionID = question.Id;
-                                                    string logResponse = JsonConvert.SerializeObject(mcqresponse);
-                                                    return Ok(new { ErrorQuestionID , logResponse });
+                                                    var logger = new DTORequestResponseLog
+                                                    {
+                                                        CourseID = BedoCourseId,
+                                                        Device = "Bedo",
+                                                        ErrorQuestionID = question.Id,
+                                                        logRequest = JsonConvert.SerializeObject(body),
+                                                        logResponse = JsonConvert.SerializeObject(mcqresponse.Content),
+                                                        RequestUri = mcqclient.BaseUrl.AbsoluteUri,
+                                                        StatusCode = mcqresponse.StatusDescription,
+                                                        QuestionID = question.Id
+                                                    };
+
+                                                    await courseDataAccessLayer.RequestResponseLogger(logger);
+
                                                 }
+
+                                                #endregion
+
                                             }
                                             #endregion
                                             #region Essay

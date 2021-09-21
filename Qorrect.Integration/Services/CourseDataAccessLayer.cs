@@ -205,5 +205,26 @@ namespace Qorrect.Integration.Services
             return 1;
         }
 
+        public async Task RequestResponseLogger(DTORequestResponseLog model)
+        {
+            using (SqlConnection con = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand("SP_LOGREQUESTANDRESPONSE", con))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@Req", model.logRequest);
+                    cmd.Parameters.AddWithValue("@Res", model.logResponse);
+                    cmd.Parameters.AddWithValue("@Uri", model.RequestUri);
+                    cmd.Parameters.AddWithValue("@CrsId", model.CourseID);
+                    cmd.Parameters.AddWithValue("@QuesId", model.QuestionID);
+                    cmd.Parameters.AddWithValue("@StCode", model.StatusCode);
+                    cmd.Parameters.AddWithValue("@Dev", model.Device);
+                    con.Open();
+                    cmd.ExecuteNonQuery();
+                    con.Close();
+                }
+            }
+        }
+
     }
 }
