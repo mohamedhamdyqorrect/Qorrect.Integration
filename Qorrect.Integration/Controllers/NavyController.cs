@@ -489,12 +489,26 @@ namespace Qorrect.Integration.Controllers
                                                 };
                                                 Essayrequest.AddParameter("application/json", JsonConvert.SerializeObject(Essaybody), ParameterType.RequestBody);
                                                 IRestResponse Essayresponse = Essayclient.Execute(Essayrequest);
-                                                if (Essayresponse.Content is null)
+                                                #region Log in Database
+
                                                 {
-                                                    int ErrorQuestionID = questionEssay.Id;
-                                                    string logResponse = JsonConvert.SerializeObject(Essayresponse);
+                                                    var logger = new DTORequestResponseLog
+                                                    {
+                                                        CourseID = BedoCourseId,
+                                                        Device = "Bedo",
+                                                        ErrorQuestionID = questionEssay.Id,
+                                                        logRequest = JsonConvert.SerializeObject(Essaybody),
+                                                        logResponse = JsonConvert.SerializeObject(Essayresponse.Content),
+                                                        RequestUri = Essayclient.BaseUrl.AbsoluteUri,
+                                                        StatusCode = Essayresponse.StatusDescription,
+                                                        QuestionID = questionEssay.Id
+                                                    };
+
+                                                    await courseDataAccessLayer.RequestResponseLogger(logger);
 
                                                 }
+
+                                                #endregion
                                             }
                                             #endregion
 

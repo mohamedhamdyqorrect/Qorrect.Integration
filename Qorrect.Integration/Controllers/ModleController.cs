@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using System.Xml.Linq;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Qorrect.Integration.Services;
 
 namespace Qorrect.Integration.Controllers
 {
@@ -19,6 +20,8 @@ namespace Qorrect.Integration.Controllers
     [Route("[controller]")]
     public class ModleController : ControllerBase
     {
+
+        CourseDataAccessLayer courseDataAccessLayer = null;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _webHostEnvironment;
 
@@ -27,6 +30,10 @@ namespace Qorrect.Integration.Controllers
         public ModleController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _configuration = configuration;
+            courseDataAccessLayer = new CourseDataAccessLayer()
+            {
+                connectionString = _configuration.GetConnectionString("Constr")
+            };
             QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
             MediaBaseUrl = _configuration.GetValue<string>("MediaBaseUrl");
             _webHostEnvironment = webHostEnvironment;
@@ -426,18 +433,60 @@ namespace Qorrect.Integration.Controllers
                             var mcqrequest = new RestRequest(Method.POST);
                             mcqrequest.AddHeader("Authorization", token);
                             mcqrequest.AddHeader("Content-Type", "application/json");
+                           
                             if (qType == "multichoice" || qType == "truefalse")
                             {
                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);
+                                IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+
+                                #region Log in Database
+
+                                {
+                                    int cID = 0;// Convert.ToInt32(courseRequest.CourseID);
+                                    var logger = new DTORequestResponseLog
+                                    {
+                                        CourseID = Convert.ToInt32(Course.id),
+                                        Device = "Moodel",
+                                        ErrorQuestionID = cID,
+                                        logRequest = JsonConvert.SerializeObject(MCQbody),
+                                        logResponse = JsonConvert.SerializeObject(mcqresponse.Content),
+                                        RequestUri = mcqclient.BaseUrl.AbsoluteUri,
+                                        StatusCode = mcqresponse.StatusDescription,
+                                        QuestionID = cID
+                                    };
+                                    var ccc = logger;
+                                    await courseDataAccessLayer.RequestResponseLogger(logger);
+                                }
+                                #endregion
                             }
                             if (qType == "essay")
                             {
                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(Essaybody), ParameterType.RequestBody);
+
+                                IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
+
+                                #region Log in Database
+
+                                {
+                                    int cID = 0;// Convert.ToInt32(courseRequest.CourseID);
+                                    var logger = new DTORequestResponseLog
+                                    {
+                                        CourseID = Convert.ToInt32(Course.id),
+                                        Device = "Moodel",
+                                        ErrorQuestionID = cID,
+                                        logRequest = JsonConvert.SerializeObject(Essaybody),
+                                        logResponse = JsonConvert.SerializeObject(mcqresponse.Content),
+                                        RequestUri = mcqclient.BaseUrl.AbsoluteUri,
+                                        StatusCode = mcqresponse.StatusDescription,
+                                        QuestionID = cID
+                                    };
+                                    await courseDataAccessLayer.RequestResponseLogger(logger);
+                                }
+                                #endregion
                             }
 
 
 
-                            IRestResponse mcqresponse = await mcqclient.ExecuteAsync(mcqrequest);
                         }
                     }
 
