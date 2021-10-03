@@ -27,7 +27,8 @@ namespace Qorrect.Integration.Controllers
             _configuration = configuration;
             courseDataAccessLayer = new CourseDataAccessLayer()
             {
-                connectionString = _configuration.GetConnectionString("Constr")
+                connectionString = _configuration.GetConnectionString("Constr"),
+                bediIntegrationString = _configuration.GetConnectionString("BedoIntegrateConstr")
             };
             QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
         }
@@ -280,8 +281,6 @@ namespace Qorrect.Integration.Controllers
                                     bedoIlos = await courseDataAccessLayer.GetLevelIlo(node.Id);
                                     foreach (var bedoIlo in bedoIlos)
                                     {
-                                        //if (ListOfBedoIlosInsertedtoQorrect.Contains(bedoIlo.Id)) { continue; }
-                                        // ListOfBedoIlosInsertedtoQorrect.Add(bedoIlo.Id);
                                         {
                                             var clientILO = new RestClient($"{QorrectBaseUrl}/intendedlearningoutcome");
                                             clientILO.Timeout = -1;
@@ -523,7 +522,6 @@ namespace Qorrect.Integration.Controllers
                                 #endregion
 
                             }
-                            //ListOfIlOsInserted.Clear();
                         }
 
                         #endregion

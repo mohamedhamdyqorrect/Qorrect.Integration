@@ -27,13 +27,16 @@ namespace Qorrect.Integration.Controllers
 
         public string QorrectBaseUrl { get; set; }
         public string MediaBaseUrl { get; set; }
+        public string MoodlebaseUrl { get; set; }
         public ModleController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _configuration = configuration;
             courseDataAccessLayer = new CourseDataAccessLayer()
             {
-                connectionString = _configuration.GetConnectionString("Constr")
+                connectionString = _configuration.GetConnectionString("Constr"),
+                bediIntegrationString = _configuration.GetConnectionString("BedoIntegrateConstr")
             };
+            MoodlebaseUrl = courseDataAccessLayer.GetMoodleBaseUrl().Result;
             QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
             MediaBaseUrl = _configuration.GetValue<string>("MediaBaseUrl");
             _webHostEnvironment = webHostEnvironment;
@@ -44,7 +47,7 @@ namespace Qorrect.Integration.Controllers
         [Route("GenerateToken")]
         public async Task<IActionResult> GenerateToken(DTOLogin model)
         {
-            var client = new RestClient("http://ahmadhafez-001-site1.ftempurl.com/login/token.php");
+            var client = new RestClient($"{MoodlebaseUrl}/login/token.php");
             client.Timeout = -1;
             var request = new RestRequest(Method.GET);
             request.AddParameter("username", model.username, ParameterType.QueryString);
@@ -58,7 +61,7 @@ namespace Qorrect.Integration.Controllers
         [Route("CourseList")]
         public async Task<IActionResult> CourseList([FromQuery] string wstoken)
         {
-            var client = new RestClient("http://ahmadhafez-001-site1.ftempurl.com/webservice/rest/server.php");
+            var client = new RestClient($"{MoodlebaseUrl}/webservice/rest/server.php");
             client.Timeout = -1;
             var request = new RestRequest(Method.GET);
             request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
@@ -138,8 +141,6 @@ namespace Qorrect.Integration.Controllers
             IRestResponse response = await client.ExecuteAsync(request);
             var item = JsonConvert.DeserializeObject<DTOAddEditCourse>(response.Content);
 
-
-
             #region Apply Outline structure to course
             {
                 var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
@@ -159,7 +160,7 @@ namespace Qorrect.Integration.Controllers
             #endregion
             Guid ParentId = Guid.Parse(item.Id.ToString());
 
-            var Unitsclient = new RestClient("http://ahmadhafez-001-site1.ftempurl.com/webservice/rest/server.php");
+            var Unitsclient = new RestClient($"{MoodlebaseUrl}/webservice/rest/server.php");
             Unitsclient.Timeout = -1;
             var Unitsrequest = new RestRequest(Method.GET);
             Unitsrequest.AddParameter("wstoken", courseRequest.ModleToken, ParameterType.QueryString);
@@ -433,7 +434,7 @@ namespace Qorrect.Integration.Controllers
                             var mcqrequest = new RestRequest(Method.POST);
                             mcqrequest.AddHeader("Authorization", token);
                             mcqrequest.AddHeader("Content-Type", "application/json");
-                           
+
                             if (qType == "multichoice" || qType == "truefalse")
                             {
                                 mcqrequest.AddParameter("application/json", JsonConvert.SerializeObject(MCQbody), ParameterType.RequestBody);

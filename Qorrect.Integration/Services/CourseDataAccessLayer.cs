@@ -11,6 +11,7 @@ namespace Qorrect.Integration.Services
     public class CourseDataAccessLayer
     {
         public string connectionString { get; set; }
+        public string bediIntegrationString { get; set; }
 
         public async Task<List<DTOBedoCourse>> GetAllCourses()
         {
@@ -207,7 +208,7 @@ namespace Qorrect.Integration.Services
 
         public async Task RequestResponseLogger(DTORequestResponseLog model)
         {
-            using (SqlConnection con = new SqlConnection(connectionString))
+            using (SqlConnection con = new SqlConnection(bediIntegrationString))
             {
                 using (SqlCommand cmd = new SqlCommand("SP_LOGREQUESTANDRESPONSE", con))
                 {
@@ -224,6 +225,23 @@ namespace Qorrect.Integration.Services
                     con.Close();
                 }
             }
+        }
+
+        public async Task<string> GetMoodleBaseUrl()
+        {
+            string BaseUrl = "";
+            using (SqlConnection con = new SqlConnection(bediIntegrationString))
+            {
+                using (SqlCommand cmd = new SqlCommand("SP_GETMOOODLEBASEURL", con))
+                {
+                    con.Open();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@FACID", "Moodle");
+                    BaseUrl = cmd.ExecuteScalar().ToString();
+                    con.Close();
+                }
+            }
+            return BaseUrl;
         }
 
     }
