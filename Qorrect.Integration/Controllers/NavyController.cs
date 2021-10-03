@@ -536,7 +536,7 @@ namespace Qorrect.Integration.Controllers
             #region Invisible Added bedo Cousres
             {
                 string ids = string.Join(", ", courseRequest.Courses.Select(p => p.Id));
-                //var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
+                var newCourses = await courseDataAccessLayer.InvisibleAddedCourses(ids);
             }
             #endregion
 
