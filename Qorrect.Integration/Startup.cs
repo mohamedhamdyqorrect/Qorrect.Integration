@@ -5,8 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
-using Qorrect.Integration.Helper;
-using System;
 using System.IO;
 
 namespace Qorrect.Integration
@@ -25,16 +23,6 @@ namespace Qorrect.Integration
         {
             services.AddCors();
             services.AddControllers();
-            // Add a typed client that fetches some dummy JSON
-            services.AddHttpClient("test", client =>
-            {
-                client.BaseAddress = new Uri("https://localhost:44387/");
-            })
-            // Add our custom handler to the "test" handler pipeline
-            .AddHttpMessageHandler<LogRequestAndResponseHandler>();
-
-            // Register the message handler with the pipeline
-            services.AddTransient<LogRequestAndResponseHandler>();
 
         }
 

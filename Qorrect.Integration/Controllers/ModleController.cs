@@ -20,34 +20,24 @@ namespace Qorrect.Integration.Controllers
     [Route("[controller]")]
     public class ModleController : ControllerBase
     {
-
-        CourseDataAccessLayer courseDataAccessLayer = null;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _webHostEnvironment;
+        DTOManageUrl _configUrl = null;
+        public string bedoIntegrationString { get; set; }
 
-        public string QorrectBaseUrl { get; set; }
-        public string MediaBaseUrl { get; set; }
-        public string MoodlebaseUrl { get; set; }
         public ModleController(IConfiguration configuration, IWebHostEnvironment webHostEnvironment)
         {
             _configuration = configuration;
-            courseDataAccessLayer = new CourseDataAccessLayer()
-            {
-                connectionString = _configuration.GetConnectionString("Constr"),
-                bediIntegrationString = _configuration.GetConnectionString("BedoIntegrateConstr")
-            };
-            MoodlebaseUrl = courseDataAccessLayer.GetMoodleBaseUrl().Result;
-            QorrectBaseUrl = _configuration.GetValue<string>("QorrectBaseUrl");
-            MediaBaseUrl = _configuration.GetValue<string>("MediaBaseUrl");
+            bedoIntegrationString = _configuration.GetConnectionString("BedoIntegrateConstr");
+            _configUrl = new CourseDataAccessLayer().GetMoodleBaseUrl(bedoIntegrationString).Result;
             _webHostEnvironment = webHostEnvironment;
-
         }
 
         [HttpPost]
         [Route("GenerateToken")]
         public async Task<IActionResult> GenerateToken(DTOLogin model)
         {
-            var client = new RestClient($"{MoodlebaseUrl}/login/token.php");
+            var client = new RestClient($"{_configUrl.MoodlebaseUrl}/login/token.php");
             client.Timeout = -1;
             var request = new RestRequest(Method.GET);
             request.AddParameter("username", model.username, ParameterType.QueryString);
@@ -61,7 +51,7 @@ namespace Qorrect.Integration.Controllers
         [Route("CourseList")]
         public async Task<IActionResult> CourseList([FromQuery] string wstoken)
         {
-            var client = new RestClient($"{MoodlebaseUrl}/webservice/rest/server.php");
+            var client = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
             client.Timeout = -1;
             var request = new RestRequest(Method.GET);
             request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
@@ -84,7 +74,7 @@ namespace Qorrect.Integration.Controllers
             #region Question Tags
 
             {
-                var tagClient = new RestClient($"{QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromMoodle");
+                var tagClient = new RestClient($"{_configUrl.QorrectBaseUrl}/tags?page=1&pageSize=10&searchText=FromMoodle");
                 tagClient.Timeout = -1;
                 var tagRequest = new RestRequest(Method.GET);
                 tagRequest.AddHeader("Connection", "keep-alive");
@@ -131,7 +121,7 @@ namespace Qorrect.Integration.Controllers
             };
 
 
-            var client = new RestClient($"{QorrectBaseUrl}/courses");
+            var client = new RestClient($"{_configUrl.QorrectBaseUrl}/courses");
             client.Timeout = -1;
             var request = new RestRequest(Method.POST);
             request.AddHeader("Authorization", token);
@@ -143,7 +133,7 @@ namespace Qorrect.Integration.Controllers
 
             #region Apply Outline structure to course
             {
-                var applyOutlineclient = new RestClient($"{QorrectBaseUrl}/course/applyOutline");
+                var applyOutlineclient = new RestClient($"{_configUrl.QorrectBaseUrl}/course/applyOutline");
                 applyOutlineclient.Timeout = -1;
                 var applyOutlinerequest = new RestRequest(Method.POST);
                 applyOutlinerequest.AddHeader("Authorization", token);
@@ -160,7 +150,7 @@ namespace Qorrect.Integration.Controllers
             #endregion
             Guid ParentId = Guid.Parse(item.Id.ToString());
 
-            var Unitsclient = new RestClient($"{MoodlebaseUrl}/webservice/rest/server.php");
+            var Unitsclient = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
             Unitsclient.Timeout = -1;
             var Unitsrequest = new RestRequest(Method.GET);
             Unitsrequest.AddParameter("wstoken", courseRequest.ModleToken, ParameterType.QueryString);
@@ -177,7 +167,7 @@ namespace Qorrect.Integration.Controllers
                 #region Add Node level authorized by teacher
 
                 {
-                    var nodeclient = new RestClient($"{QorrectBaseUrl}/courses/node");
+                    var nodeclient = new RestClient($"{_configUrl.QorrectBaseUrl}/courses/node");
                     nodeclient.Timeout = -1;
                     var noderequest = new RestRequest(Method.POST);
                     noderequest.AddHeader("Authorization", token);
@@ -225,7 +215,7 @@ namespace Qorrect.Integration.Controllers
                                         ParentId = unitResponse.Id.Value
                                     };
 
-                                    var leafclient = new RestClient($"{QorrectBaseUrl}/courses/leaf");
+                                    var leafclient = new RestClient($"{_configUrl.QorrectBaseUrl}/courses/leaf");
                                     leafclient.Timeout = -1;
                                     var leafrequest = new RestRequest(Method.POST);
                                     leafrequest.AddHeader("Authorization", token);
@@ -302,7 +292,7 @@ namespace Qorrect.Integration.Controllers
 
 
 
-                                var Mediaclient = new RestClient($"{MediaBaseUrl}/media/items/upload");
+                                var Mediaclient = new RestClient($"{_configUrl.MediaBaseUrl}/media/items/upload");
                                 Mediaclient.Timeout = -1;
                                 var Mediarequest = new RestRequest(Method.POST);
                                 Mediarequest.AddParameter("isGenerateMediaId", true, ParameterType.QueryString);
@@ -429,7 +419,7 @@ namespace Qorrect.Integration.Controllers
                             {
                                 apiMethod = "TF";
                             }
-                            var mcqclient = new RestClient($"{QorrectBaseUrl}/item/" + apiMethod);
+                            var mcqclient = new RestClient($"{_configUrl.QorrectBaseUrl}/item/" + apiMethod);
                             mcqclient.Timeout = -1;
                             var mcqrequest = new RestRequest(Method.POST);
                             mcqrequest.AddHeader("Authorization", token);
@@ -456,7 +446,7 @@ namespace Qorrect.Integration.Controllers
                                         QuestionID = cID
                                     };
                                     var ccc = logger;
-                                    await courseDataAccessLayer.RequestResponseLogger(logger);
+                                    await new CourseDataAccessLayer().RequestResponseLogger(bedoIntegrationString , logger);
                                 }
                                 #endregion
                             }
@@ -481,7 +471,7 @@ namespace Qorrect.Integration.Controllers
                                         StatusCode = mcqresponse.StatusDescription,
                                         QuestionID = cID
                                     };
-                                    await courseDataAccessLayer.RequestResponseLogger(logger);
+                                    await new CourseDataAccessLayer().RequestResponseLogger(bedoIntegrationString , logger);
                                 }
                                 #endregion
                             }
@@ -546,7 +536,7 @@ namespace Qorrect.Integration.Controllers
 
 
                 Guid CourseSubscriptionId = Guid.Parse(courseRequest.CourseSubscriptionId);
-                var mcqclient = new RestClient($"{QorrectBaseUrl}/item/mcq");
+                var mcqclient = new RestClient($"{_configUrl.QorrectBaseUrl}/item/mcq");
                 mcqclient.Timeout = -1;
                 var mcqrequest = new RestRequest(Method.POST);
                 mcqrequest.AddHeader("Authorization", token);

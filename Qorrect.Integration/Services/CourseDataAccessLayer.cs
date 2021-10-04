@@ -10,10 +10,7 @@ namespace Qorrect.Integration.Services
 {
     public class CourseDataAccessLayer
     {
-        public string connectionString { get; set; }
-        public string bediIntegrationString { get; set; }
-
-        public async Task<List<DTOBedoCourse>> GetAllCourses()
+        public async Task<List<DTOBedoCourse>> GetAllCourses(string connectionString)
         {
             List<DTOBedoCourse> lstCourse = new List<DTOBedoCourse>();
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -43,7 +40,7 @@ namespace Qorrect.Integration.Services
             return lstCourse.ToList();
         }
 
-        public async Task<List<DTOBedoUnites>> GetCourseLevels(int crsId)
+        public async Task<List<DTOBedoUnites>> GetCourseLevels(string connectionString , int crsId)
         {
             List<DTOBedoUnites> crsLevels = new List<DTOBedoUnites>();
             int order = 0;
@@ -91,7 +88,7 @@ namespace Qorrect.Integration.Services
             return crsLevels.ToList();
         }
 
-        public async Task<List<DTOBedoILO>> GetLevelIlo(int levelId)
+        public async Task<List<DTOBedoILO>> GetLevelIlo(string connectionString , int levelId)
         {
             List<DTOBedoILO> Ilos = new List<DTOBedoILO>();
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -120,7 +117,7 @@ namespace Qorrect.Integration.Services
             return Ilos.ToList();
         }
 
-        public async Task<List<DTOBedoCongnitiveLevel>> GetCongitive(int crsId)
+        public async Task<List<DTOBedoCongnitiveLevel>> GetCongitive(string connectionString , int crsId)
         {
             List<DTOBedoCongnitiveLevel> congnitiveLevels = new List<DTOBedoCongnitiveLevel>();
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -148,7 +145,7 @@ namespace Qorrect.Integration.Services
             return congnitiveLevels.ToList();
         }
 
-        public async Task<List<DTOItemFromBedoByIloResponse>> GetItemsByIlo(int IloId)
+        public async Task<List<DTOItemFromBedoByIloResponse>> GetItemsByIlo(string connectionString , int IloId)
         {
             List<DTOItemFromBedoByIloResponse> items = new List<DTOItemFromBedoByIloResponse>();
             using (SqlConnection con = new SqlConnection(connectionString))
@@ -190,7 +187,7 @@ namespace Qorrect.Integration.Services
 
         }
 
-        public async Task<int> InvisibleAddedCourses(string ids)
+        public async Task<int> InvisibleAddedCourses(string connectionString , string ids)
         {
             using (SqlConnection con = new SqlConnection(connectionString))
             {
@@ -206,9 +203,9 @@ namespace Qorrect.Integration.Services
             return 1;
         }
 
-        public async Task RequestResponseLogger(DTORequestResponseLog model)
+        public async Task RequestResponseLogger(string bedoIntegrationString, DTORequestResponseLog model)
         {
-            using (SqlConnection con = new SqlConnection(bediIntegrationString))
+            using (SqlConnection con = new SqlConnection(bedoIntegrationString))
             {
                 using (SqlCommand cmd = new SqlCommand("SP_LOGREQUESTANDRESPONSE", con))
                 {
@@ -227,21 +224,72 @@ namespace Qorrect.Integration.Services
             }
         }
 
-        public async Task<string> GetMoodleBaseUrl()
+        public async Task MoodleConfigurationSetting(string bedoIntegrationString, DTOManageUrl model)
         {
-            string BaseUrl = "";
-            using (SqlConnection con = new SqlConnection(bediIntegrationString))
+            using (SqlConnection con = new SqlConnection(bedoIntegrationString))
             {
-                using (SqlCommand cmd = new SqlCommand("SP_GETMOOODLEBASEURL", con))
+                using (SqlCommand cmd = new SqlCommand("SP_MOODLECONFIG", con))
                 {
                     con.Open();
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.AddWithValue("@FACID", "Moodle");
-                    BaseUrl = cmd.ExecuteScalar().ToString();
+                    cmd.Parameters.AddWithValue("@MBURL", model.MoodlebaseUrl);
+                    cmd.Parameters.AddWithValue("@QBURL", model.QorrectBaseUrl);
+                    cmd.Parameters.AddWithValue("@DBURL", model.MediaBaseUrl);
+                    var rdr = cmd.ExecuteNonQuery();                 
                     con.Close();
                 }
             }
-            return BaseUrl;
+        }
+
+        public async Task BedoConfigurationSetting(string bedoIntegrationString, DTOManageUrl model)
+        {
+            using (SqlConnection con = new SqlConnection(bedoIntegrationString))
+            {
+                using (SqlCommand cmd = new SqlCommand("SP_QORRECTCONFIG", con))
+                {
+                    con.Open();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.AddWithValue("@BBURL", model.BedobaseUrl);
+                    cmd.Parameters.AddWithValue("@QBURL", model.QorrectBaseUrl);
+                    cmd.Parameters.AddWithValue("@DBURL", model.MediaBaseUrl);
+                    var rdr = cmd.ExecuteNonQuery();
+                    con.Close();
+                }
+            }
+        }
+
+        public async Task<DTOManageUrl> GetMoodleBaseUrl(string bedoIntegrationString)
+        {
+            DTOManageUrl _managedUrl = null;
+            List<DTOConfigUrl> _configUrls = new List<DTOConfigUrl>();
+            using (SqlConnection con = new SqlConnection(bedoIntegrationString))
+            {
+                using (SqlCommand cmd = new SqlCommand("SP_GETCONFIGBASEURL", con))
+                {
+                    con.Open();
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    var rdr = cmd.ExecuteReader();
+                    while (rdr.Read())
+                    {
+                        _configUrls.Add(new DTOConfigUrl
+                        {
+                            Faculty = rdr[0].ToString(),
+                            ApiUrl = rdr[1].ToString()
+                        });
+                    }
+
+                    _managedUrl = new DTOManageUrl
+                    {
+                        BedobaseUrl = _configUrls.FirstOrDefault(a => a.Faculty.Equals("BedoConnectionString")).ApiUrl,
+                        MediaBaseUrl = _configUrls.FirstOrDefault(a => a.Faculty.Equals("MediaBaseUrl")).ApiUrl,
+                        MoodlebaseUrl = _configUrls.FirstOrDefault(a => a.Faculty.Equals("MoodleBaseUrl")).ApiUrl,
+                        QorrectBaseUrl = _configUrls.FirstOrDefault(a => a.Faculty.Equals("QorrectBaseUrl")).ApiUrl
+                    };
+
+                    con.Close();
+                }
+            }
+            return _managedUrl;
         }
 
     }
