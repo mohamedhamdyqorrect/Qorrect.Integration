@@ -48,48 +48,36 @@ namespace Qorrect.Integration.Controllers
         }
 
         [HttpGet]
-        [Route("CourseList")]
-        public async Task<IActionResult> CourseList([FromQuery] string wstoken)
+        [Route("CategoryList")]
+        public async Task<IActionResult> CategoryList([FromQuery] string wstoken)
         {
-            IRestResponse courseReseponse;
             List<DTOMoodleCategory> moodleCategories = new List<DTOMoodleCategory>();
-            DTOModleCourse moodleCourse = new DTOModleCourse() { courses = new List<Cours>() };
-            List<Cours> courses = new List<Cours>();
+            var client = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.GET);
+            request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
+            request.AddParameter("wsfunction", "core_course_get_categories", ParameterType.QueryString);
+            request.AddParameter("moodlewsrestformat", "json", ParameterType.QueryString);
+            IRestResponse response = await client.ExecuteAsync(request);
+            moodleCategories = JsonConvert.DeserializeObject<List<DTOMoodleCategory>>(response.Content);
+            return Ok(moodleCategories);
+        }
 
-            #region Categories
-            {
-                var client = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
-                client.Timeout = -1;
-                var request = new RestRequest(Method.GET);
-                request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
-                request.AddParameter("wsfunction", "core_course_get_categories", ParameterType.QueryString);
-                request.AddParameter("moodlewsrestformat", "json", ParameterType.QueryString);
-                IRestResponse response = client.Execute(request);
-                moodleCategories = JsonConvert.DeserializeObject<List<DTOMoodleCategory>>(response.Content);
-            }
-            #endregion
+        [HttpGet]
+        [Route("CourseList")]
+        public async Task<IActionResult> CourseList([FromQuery] string wstoken , [FromQuery] string id)
+        {
 
-
-            #region Courses
-            {
-                foreach (var item in moodleCategories)
-                {
-                    var client = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
-                    client.Timeout = -1;
-                    var request = new RestRequest(Method.GET);
-                    request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
-                    request.AddParameter("wsfunction", "core_course_get_courses_by_field", ParameterType.QueryString);
-                    request.AddParameter("field", "category", ParameterType.QueryString);
-                    request.AddParameter("value", item.id.ToString(), ParameterType.QueryString);
-                    request.AddParameter("moodlewsrestformat", "json", ParameterType.QueryString);
-                    courseReseponse = await client.ExecuteAsync(request);
-                    courses = JsonConvert.DeserializeObject<DTOModleCourse>(courseReseponse.Content).courses;
-                    moodleCourse.courses.AddRange(courses);
-                }
-            }
-            #endregion
-
-
+            var client = new RestClient($"{_configUrl.MoodlebaseUrl}/webservice/rest/server.php");
+            client.Timeout = -1;
+            var request = new RestRequest(Method.GET);
+            request.AddParameter("wstoken", wstoken, ParameterType.QueryString);
+            request.AddParameter("wsfunction", "core_course_get_courses_by_field", ParameterType.QueryString);
+            request.AddParameter("field", "category", ParameterType.QueryString);
+            request.AddParameter("value", id, ParameterType.QueryString);
+            request.AddParameter("moodlewsrestformat", "json", ParameterType.QueryString);
+            IRestResponse courseReseponse = await client.ExecuteAsync(request);
+            DTOModleCourse moodleCourse = JsonConvert.DeserializeObject<DTOModleCourse>(courseReseponse.Content);
             return Ok(moodleCourse);
         }
 
