@@ -7,6 +7,7 @@
         public string logRequest { get; set; }
         public string logResponse { get; set; }
         public int CourseID { get; set; }
+        public string CourseName { get; set; }
         public int QuestionID { get; set; }
         public string Device { get; set; }
         public string StatusCode { get; set; }

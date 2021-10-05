@@ -455,6 +455,7 @@ namespace Qorrect.Integration.Controllers
                                     var logger = new DTORequestResponseLog
                                     {
                                         CourseID = Convert.ToInt32(Course.id),
+                                        CourseName = Course.fullname,
                                         Device = "Moodel",
                                         ErrorQuestionID = cID,
                                         logRequest = JsonConvert.SerializeObject(MCQbody),
@@ -463,7 +464,6 @@ namespace Qorrect.Integration.Controllers
                                         StatusCode = mcqresponse.StatusDescription,
                                         QuestionID = cID
                                     };
-                                    var ccc = logger;
                                     await new CourseDataAccessLayer().RequestResponseLogger(bedoIntegrationString, logger);
                                 }
                                 #endregion
@@ -481,6 +481,7 @@ namespace Qorrect.Integration.Controllers
                                     var logger = new DTORequestResponseLog
                                     {
                                         CourseID = Convert.ToInt32(Course.id),
+                                        CourseName = Course.fullname,
                                         Device = "Moodel",
                                         ErrorQuestionID = cID,
                                         logRequest = JsonConvert.SerializeObject(Essaybody),
