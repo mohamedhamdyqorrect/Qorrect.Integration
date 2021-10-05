@@ -19,6 +19,15 @@ namespace Qorrect.Integration.Controllers
             BedoIntegrateConstr = _configuration.GetConnectionString("BedoIntegrateConstr");
         }
 
+
+        [HttpGet]
+        [Route("GetSetting")]
+        public async Task<IActionResult> GetSetting()
+        {
+            var result = await new CourseDataAccessLayer().GetMoodleBaseUrl(BedoIntegrateConstr);
+            return Ok(result);
+        }
+
         [HttpPost]
         [Route("ApplyMoodleSetting")]
         public async Task<IActionResult> ApplyMoodleSetting([FromBody] DTOManageUrl model)
