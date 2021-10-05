@@ -36,7 +36,13 @@ namespace Qorrect.Integration.Controllers
             var bedoCourses = await new CourseDataAccessLayer().GetAllCourses(_configUrl.BedobaseUrl);
             return Ok(bedoCourses);
         }
-
+        [HttpGet]
+        [Route("TransferedCoursesList")]
+        public async Task<IActionResult> GetTransferedCoursesList()
+        {
+            var bedoCourses = await new CourseDataAccessLayer().GetTransferedCourses(bedoIntegrationString);
+            return Ok(bedoCourses);
+        }
         [HttpGet]
         [Route("QorrectModules/{id}")]
         public async Task<IActionResult> QorrectModules([FromRoute] string id)

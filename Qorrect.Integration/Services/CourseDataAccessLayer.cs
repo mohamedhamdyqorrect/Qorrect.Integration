@@ -292,5 +292,30 @@ namespace Qorrect.Integration.Services
             return _managedUrl;
         }
 
+        public async Task<List<DTOTransferedCourse>> GetTransferedCourses(string bedoIntegrationString)
+        {
+            List<DTOTransferedCourse> lstCourse = new List<DTOTransferedCourse>();
+            using (SqlConnection con = new SqlConnection(bedoIntegrationString))
+            {
+                SqlCommand cmd = new SqlCommand("spGetTransferedCourses", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+                con.Open();
+                SqlDataReader rdr = cmd.ExecuteReader();
+
+                while (rdr.Read())
+                {
+                    lstCourse.Add(new DTOTransferedCourse()
+                    {
+                        Id = Convert.ToInt32(rdr["CourseID"]),
+                        CourseName = "course  # " + rdr["CourseID"].ToString(),
+                        // CourseCode = rdr["total"].ToString(),
+                        InsertedItems = rdr["ok"].ToString(),
+                        LostItems = rdr["lost"].ToString(),
+                    });
+                }
+                con.Close();
+            }
+            return lstCourse.ToList();
+        }
     }
 }
